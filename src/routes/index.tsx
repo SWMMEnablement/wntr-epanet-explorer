@@ -3,17 +3,19 @@ import {
   Activity,
   Download,
   FileText,
-  Notebook,
-  Waves,
-  Shield,
-  GitBranch,
-  LineChart,
-  Info,
   Github,
+  HelpCircle,
+  Info,
+  LineChart,
   MessageCircle,
+  Notebook,
   Scale,
+  Shield,
   Terminal,
+  Waves,
+  GitBranch,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export const Route = createFileRoute("/")({
   head: () => ({
