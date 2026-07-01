@@ -292,6 +292,94 @@ function Index() {
           ))}
         </div>
       </section>
+      {/* Resilience metrics in the summary output */}
+      <section className="mx-auto max-w-6xl px-6 py-14">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
+          Resilience metrics in the summary output
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate-400">
+          Each ensemble run calculates the following four metrics. They are averaged across all scenarios and saved in{" "}
+          <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">summary.csv</code>/
+          <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">summary.json</code>.
+        </p>
+        <p className="mt-1 max-w-2xl text-sm text-slate-400">
+          Per-run values are also stored inside the{" "}
+          <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">results/</code> directory in individual JSON
+          files so you can drill into any scenario.
+        </p>
+        <div className="mt-6 overflow-hidden rounded-xl border border-white/10">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-white/[0.04] text-[11px] uppercase tracking-wider text-slate-400">
+              <tr>
+                <th className="px-4 py-2.5 font-medium">Metric</th>
+                <th className="px-4 py-2.5 font-medium">Column name</th>
+                <th className="px-4 py-2.5 font-medium">What it measures</th>
+                <th className="px-4 py-2.5 font-medium">Range</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-t border-white/10 align-top">
+                <td className="px-4 py-3 text-sm font-semibold text-slate-100">Water Service Availability</td>
+                <td className="px-4 py-3">
+                  <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">wsa</code>
+                </td>
+                <td className="px-4 py-3 text-[13px] text-slate-400">
+                  Fraction of total demand that is actually delivered to customers under pressure-driven demand (PDD).
+                  0 = no service, 1 = full supply.
+                </td>
+                <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – 1</td>
+              </tr>
+              <tr className="border-t border-white/10 align-top">
+                <td className="px-4 py-3 text-sm font-semibold text-slate-100">Todini Resilience Index</td>
+                <td className="px-4 py-3">
+                  <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">todini</code>
+                </td>
+                <td className="px-4 py-3 text-[13px] text-slate-400">
+                  Energy-based resilience: 1 – (total dissipated power / total input power). Values near 1 mean the network
+                  has lots of surplus capacity.
+                </td>
+                <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – 1</td>
+              </tr>
+              <tr className="border-t border-white/10 align-top">
+                <td className="px-4 py-3 text-sm font-semibold text-slate-100">Low-pressure fraction</td>
+                <td className="px-4 py-3">
+                  <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">low_pressure_frac</code>
+                </td>
+                <td className="px-4 py-3 text-[13px] text-slate-400">
+                  Fraction of time-steps (or node-time instances) where junction pressure falls below the critical
+                  threshold (default 20 psi).
+                </td>
+                <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – 1</td>
+              </tr>
+              <tr className="border-t border-white/10 align-top">
+                <td className="px-4 py-3 text-sm font-semibold text-slate-100">Population impact</td>
+                <td className="px-4 py-3">
+                  <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">pop_impact</code>
+                </td>
+                <td className="px-4 py-3 text-[13px] text-slate-400">
+                  Estimated number of people underserved, based on nodal base demand and population. Only meaningful if your
+                  model includes population data per node.
+                </td>
+                <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – total pop.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-xs text-slate-400">
+          <em>
+            All metrics are computed using WNTR&apos;s built-in resilience functions. See the{" "}
+            <a
+              href="https://wntr.readthedocs.io/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-cyan-300 underline decoration-cyan-400/40 underline-offset-2 hover:decoration-cyan-300"
+            >
+              WNTR documentation
+            </a>{" "}
+            for deeper mathematical definitions.
+          </em>
+        </p>
+      </section>
 
       {/* Example output — visual proof */}
       <section className="border-y border-white/10 bg-black/20">
