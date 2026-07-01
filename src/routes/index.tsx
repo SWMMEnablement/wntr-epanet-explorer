@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Activity, Download, FileCode, FileText, Notebook, Waves, Shield, GitBranch } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Activity, Download, FileCode, FileText, Notebook, Waves, Shield, GitBranch, LineChart } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
