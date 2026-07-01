@@ -80,36 +80,6 @@ const scenarios = [
   { icon: Activity, name: "Earthquake", desc: "WNTR seismic fragility model across pipes and tanks." },
 ];
 
-const metrics = [
-  {
-    col: "wsa",
-    name: "Water Service Availability",
-    formula: "delivered demand / required demand (PDD)",
-    range: "0 – 1",
-    desc: "Volume of demand actually delivered under pressure-driven demand, divided by required demand. 1.0 = fully served. Below ~0.85 is a real service shortfall.",
-  },
-  {
-    col: "todini",
-    name: "Todini Resilience Index",
-    formula: "1 − (dissipated power / input power)",
-    range: "0 – 1",
-    desc: "Energy-based resilience: surplus power at demand nodes over required power. Closer to 1 = more headroom to absorb disruptions; near 0 = strained.",
-  },
-  {
-    col: "low_pressure_frac",
-    name: "Low-pressure fraction",
-    formula: "junction-hours below Pmin / total junction-hours",
-    range: "0 – 1",
-    desc: "Fraction of node-time steps below a critical pressure (default 14 m / 20 psi). Warns of contamination-intrusion and fire-flow risk even when WSA looks OK.",
-  },
-  {
-    col: "pop_impacted",
-    name: "Population impacted",
-    formula: "Σ population(node) where P < Pmin at any t",
-    range: "0 – total pop.",
-    desc: "Sum of node-level population attributes for junctions that dropped below the threshold. Translates hydraulic failure into human terms for stakeholders.",
-  },
-];
 
 // Mock summary rows for the "example output" preview
 const summaryRows = [
