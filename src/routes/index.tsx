@@ -407,19 +407,41 @@ function Index() {
           What every column in <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">summary.csv</code> means
           — so you don&apos;t have to guess when comparing runs.
         </p>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          {metrics.map((m) => (
-            <div key={m.abbr} className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
-              <div className="flex items-baseline gap-2">
-                <span className="rounded bg-cyan-400/15 px-2 py-0.5 font-mono text-[12px] text-cyan-200">
-                  {m.abbr}
-                </span>
-                <span className="text-sm font-semibold text-slate-100">{m.name}</span>
-              </div>
-              <p className="mt-2 text-sm text-slate-400">{m.desc}</p>
-            </div>
-          ))}
+        <div className="mt-6 overflow-hidden rounded-xl border border-white/10">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-white/[0.04] text-[11px] uppercase tracking-wider text-slate-400">
+              <tr>
+                <th className="px-4 py-2.5 font-medium">Column</th>
+                <th className="px-4 py-2.5 font-medium">Metric</th>
+                <th className="px-4 py-2.5 font-medium">Formula</th>
+                <th className="px-4 py-2.5 font-medium">Range</th>
+              </tr>
+            </thead>
+            <tbody>
+              {metrics.map((m) => (
+                <tr key={m.col} className="border-t border-white/10 align-top">
+                  <td className="px-4 py-3">
+                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">
+                      {m.col}
+                    </code>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-sm font-semibold text-slate-100">{m.name}</div>
+                    <p className="mt-1 text-[13px] text-slate-400">{m.desc}</p>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-slate-300">{m.formula}</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">{m.range}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+        <p className="mt-3 text-xs text-slate-500">
+          All metrics are aggregated across the ensemble in{" "}
+          <code className="rounded bg-white/10 px-1.5 py-0.5 text-[11px]">summary.csv</code>; per-run timeseries and
+          raw values are kept in <code className="rounded bg-white/10 px-1.5 py-0.5 text-[11px]">summary.json</code>{" "}
+          for deeper analysis.
+        </p>
 
         {/* Leak-export caveat */}
         <div className="mt-6 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] p-5">
