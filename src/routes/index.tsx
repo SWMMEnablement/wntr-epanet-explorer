@@ -82,24 +82,32 @@ const scenarios = [
 
 const metrics = [
   {
-    abbr: "WSA",
+    col: "wsa",
     name: "Water Service Availability",
-    desc: "Ratio of delivered demand to required demand, aggregated over the simulation. 1.0 = fully served; drops as pressure-dependent demand fails.",
+    formula: "delivered demand / required demand (PDD)",
+    range: "0 – 1",
+    desc: "Volume of demand actually delivered under pressure-driven demand, divided by required demand. 1.0 = fully served. Below ~0.85 is a real service shortfall.",
   },
   {
-    abbr: "Todini",
+    col: "todini",
     name: "Todini Resilience Index",
-    desc: "Surplus energy at demand nodes relative to the minimum required. Higher = more headroom to absorb disruptions.",
+    formula: "1 − (dissipated power / input power)",
+    range: "0 – 1",
+    desc: "Energy-based resilience: surplus power at demand nodes over required power. Closer to 1 = more headroom to absorb disruptions; near 0 = strained.",
   },
   {
-    abbr: "Low-P frac",
+    col: "low_pressure_frac",
     name: "Low-pressure fraction",
-    desc: "Fraction of junction-hours below a pressure threshold (default 14 m / 20 psi). A blunt but readable stress indicator.",
+    formula: "junction-hours below Pmin / total junction-hours",
+    range: "0 – 1",
+    desc: "Fraction of node-time steps below a critical pressure (default 14 m / 20 psi). Warns of contamination-intrusion and fire-flow risk even when WSA looks OK.",
   },
   {
-    abbr: "Pop impact",
+    col: "pop_impacted",
     name: "Population impacted",
-    desc: "Sum of population at nodes that fell below the pressure threshold at any point in the run, using node-level population attributes.",
+    formula: "Σ population(node) where P < Pmin at any t",
+    range: "0 – total pop.",
+    desc: "Sum of node-level population attributes for junctions that dropped below the threshold. Translates hydraulic failure into human terms for stakeholders.",
   },
 ];
 
