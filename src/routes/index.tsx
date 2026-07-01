@@ -505,6 +505,10 @@ function Index() {
         </div>
       </section>
 
+      {/* Per-scenario drill-down */}
+      <ScenarioDrilldown />
+
+
       {/* Artifacts */}
       <section id="artifacts" className="border-b border-white/10">
         <div className="mx-auto max-w-6xl px-6 py-14">
