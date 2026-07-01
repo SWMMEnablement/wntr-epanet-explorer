@@ -106,9 +106,15 @@ function Index() {
             whole ensemble.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
+            <Link
+              to="/explore"
+              className="inline-flex items-center gap-2 rounded-md bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-cyan-300"
+            >
+              <LineChart className="h-4 w-4" /> Open explorer
+            </Link>
             <a
               href="#artifacts"
-              className="inline-flex items-center gap-2 rounded-md bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-cyan-300"
+              className="inline-flex items-center gap-2 rounded-md border border-white/15 px-4 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/5"
             >
               <Download className="h-4 w-4" /> Get the toolkit
             </a>
