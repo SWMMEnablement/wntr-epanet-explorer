@@ -604,3 +604,31 @@ function Stat({ label, val }: { label: string; val: string }) {
     </div>
   );
 }
+
+function MetricTooltip({ label, tip, href }: { label: string; tip: string; href: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex cursor-help items-center gap-1.5 underline decoration-cyan-400/40 decoration-dashed underline-offset-4 hover:text-cyan-200 hover:decoration-cyan-300">
+          {label}
+          <HelpCircle className="h-3.5 w-3.5 text-cyan-300/70" />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        align="start"
+        className="max-w-xs border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-100 shadow-xl"
+      >
+        <p className="leading-relaxed">{tip}</p>
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-flex items-center gap-1 text-cyan-300 hover:text-cyan-200"
+        >
+          WNTR docs <span className="text-[10px]">↗</span>
+        </a>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
