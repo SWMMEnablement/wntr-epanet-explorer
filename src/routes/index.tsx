@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Activity,
   Download,
-  FileCode,
   FileText,
   Notebook,
   Waves,
