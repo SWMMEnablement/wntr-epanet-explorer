@@ -94,6 +94,85 @@ const summaryRows = [
   { run: "run_04", wsa: 0.945, tod: 0.548, low: 0.074, pop: 6110 },
 ];
 
+// Per-scenario details loaded from results/run_XX.json (mocked here)
+type RunDetail = {
+  run: string;
+  scenario: string;
+  seed: number;
+  perturbation: { type: string; target: string; start_h: number; duration_h: number };
+  metrics: { wsa: number; todini: number; low_pressure_frac: number; pop_impacted: number };
+  worst_nodes: { node: string; min_pressure_m: number }[];
+  runtime_s: number;
+};
+
+const runDetails: RunDetail[] = [
+  {
+    run: "run_00",
+    scenario: "pipe_break",
+    seed: 1000,
+    perturbation: { type: "pipe_closure", target: "pipe_231", start_h: 6, duration_h: 12 },
+    metrics: { wsa: 0.994, todini: 0.612, low_pressure_frac: 0.021, pop_impacted: 1240 },
+    worst_nodes: [
+      { node: "J-89", min_pressure_m: 18.4 },
+      { node: "J-142", min_pressure_m: 19.7 },
+      { node: "J-33", min_pressure_m: 20.1 },
+    ],
+    runtime_s: 1.8,
+  },
+  {
+    run: "run_01",
+    scenario: "pipe_break",
+    seed: 1001,
+    perturbation: { type: "pipe_closure", target: "pipe_125", start_h: 8, duration_h: 24 },
+    metrics: { wsa: 0.871, todini: 0.418, low_pressure_frac: 0.184, pop_impacted: 18420 },
+    worst_nodes: [
+      { node: "J-35", min_pressure_m: 6.2 },
+      { node: "J-58", min_pressure_m: 8.9 },
+      { node: "J-201", min_pressure_m: 11.4 },
+    ],
+    runtime_s: 2.1,
+  },
+  {
+    run: "run_02",
+    scenario: "leak",
+    seed: 1002,
+    perturbation: { type: "junction_leak", target: "J-172", start_h: 4, duration_h: 20 },
+    metrics: { wsa: 0.932, todini: 0.507, low_pressure_frac: 0.096, pop_impacted: 8930 },
+    worst_nodes: [
+      { node: "J-172", min_pressure_m: 9.8 },
+      { node: "J-170", min_pressure_m: 13.1 },
+      { node: "J-99", min_pressure_m: 15.5 },
+    ],
+    runtime_s: 2.4,
+  },
+  {
+    run: "run_03",
+    scenario: "earthquake",
+    seed: 1003,
+    perturbation: { type: "seismic_fragility", target: "M6.8 @ (34.0,-118.3)", start_h: 0, duration_h: 48 },
+    metrics: { wsa: 0.688, todini: 0.271, low_pressure_frac: 0.342, pop_impacted: 41200 },
+    worst_nodes: [
+      { node: "J-14", min_pressure_m: 0.0 },
+      { node: "J-27", min_pressure_m: 2.3 },
+      { node: "J-88", min_pressure_m: 4.7 },
+    ],
+    runtime_s: 4.9,
+  },
+  {
+    run: "run_04",
+    scenario: "pipe_break",
+    seed: 1004,
+    perturbation: { type: "pipe_closure", target: "pipe_47", start_h: 10, duration_h: 8 },
+    metrics: { wsa: 0.945, todini: 0.548, low_pressure_frac: 0.074, pop_impacted: 6110 },
+    worst_nodes: [
+      { node: "J-47", min_pressure_m: 12.0 },
+      { node: "J-51", min_pressure_m: 14.2 },
+      { node: "J-52", min_pressure_m: 16.9 },
+    ],
+    runtime_s: 1.9,
+  },
+];
+
 // Synthetic pressure curve for the hero preview chart
 function pressurePath(broken: boolean) {
   const pts: string[] = [];
