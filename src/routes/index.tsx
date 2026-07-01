@@ -717,3 +717,213 @@ function MetricTooltip({ label, tip, href }: { label: string; tip: string; href:
     </Tooltip>
   );
 }
+
+function ScenarioDrilldown() {
+  const [selectedRun, setSelectedRun] = useState(runDetails[1].run);
+  const active = runDetails.find((r) => r.run === selectedRun) ?? runDetails[0];
+
+  const json = JSON.stringify(
+    {
+      run_id: active.run,
+      scenario: active.scenario,
+      seed: active.seed,
+      perturbation: active.perturbation,
+      metrics: active.metrics,
+      worst_nodes: active.worst_nodes,
+      runtime_s: active.runtime_s,
+    },
+    null,
+    2,
+  );
+
+  const scenarioColor: Record<string, string> = {
+    pipe_break: "text-rose-300 bg-rose-400/10 border-rose-400/30",
+    leak: "text-amber-200 bg-amber-400/10 border-amber-400/30",
+    earthquake: "text-fuchsia-200 bg-fuchsia-400/10 border-fuchsia-400/30",
+  };
+
+  return (
+    <section className="border-b border-white/10 bg-black/10">
+      <div className="mx-auto max-w-6xl px-6 py-14">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
+          Per-scenario drill-down
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate-400">
+          Every run writes a{" "}
+          <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">results/run_XX.json</code>{" "}
+          file with its metrics, perturbation, and the worst-affected nodes. Pick a run to inspect
+          it — this is exactly what your CI or analysis notebook will load.
+        </p>
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-[280px_1fr]">
+          {/* Run list */}
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2">
+            <div className="px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-slate-500">
+              results/
+            </div>
+            <ul className="flex flex-col gap-1">
+              {runDetails.map((r) => {
+                const isActive = r.run === selectedRun;
+                const failing = r.metrics.wsa < 0.8;
+                return (
+                  <li key={r.run}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRun(r.run)}
+                      className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition ${
+                        isActive
+                          ? "border-cyan-400/50 bg-cyan-400/10 text-cyan-100"
+                          : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <FileJson
+                          className={`h-3.5 w-3.5 ${isActive ? "text-cyan-300" : "text-slate-500"}`}
+                        />
+                        <span className="font-mono text-[13px]">{r.run}.json</span>
+                      </span>
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          failing ? "bg-rose-400" : "bg-emerald-400"
+                        }`}
+                        aria-label={failing ? "below WSA threshold" : "healthy"}
+                      />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {/* Detail panel */}
+          <div className="rounded-xl border border-white/10 bg-[oklch(0.19_0.04_245)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-3">
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-sm text-slate-100">
+                  results/{active.run}.json
+                </span>
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+                    scenarioColor[active.scenario] ?? "text-slate-300 bg-white/5 border-white/10"
+                  }`}
+                >
+                  {active.scenario}
+                </span>
+                <span className="text-[11px] text-slate-500">seed {active.seed}</span>
+              </div>
+              <span className="text-[11px] text-slate-500">
+                runtime {active.runtime_s.toFixed(2)}s
+              </span>
+            </div>
+
+            <div className="grid gap-5 p-5 md:grid-cols-2">
+              {/* Metrics */}
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Metrics
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <MetricCell
+                    label="WSA"
+                    value={active.metrics.wsa.toFixed(3)}
+                    tone={active.metrics.wsa < 0.8 ? "bad" : "good"}
+                  />
+                  <MetricCell label="Todini" value={active.metrics.todini.toFixed(3)} tone="info" />
+                  <MetricCell
+                    label="Low-p frac"
+                    value={active.metrics.low_pressure_frac.toFixed(3)}
+                    tone={active.metrics.low_pressure_frac > 0.2 ? "bad" : "neutral"}
+                  />
+                  <MetricCell
+                    label="Pop. impact"
+                    value={active.metrics.pop_impacted.toLocaleString()}
+                    tone={active.metrics.pop_impacted > 20000 ? "bad" : "neutral"}
+                  />
+                </div>
+
+                <div className="mt-5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Perturbation
+                </div>
+                <dl className="mt-2 space-y-1 text-[13px]">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-slate-500">type</dt>
+                    <dd className="font-mono text-slate-200">{active.perturbation.type}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-slate-500">target</dt>
+                    <dd className="font-mono text-slate-200">{active.perturbation.target}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-slate-500">start / duration</dt>
+                    <dd className="font-mono text-slate-200">
+                      {active.perturbation.start_h}h / {active.perturbation.duration_h}h
+                    </dd>
+                  </div>
+                </dl>
+
+                <div className="mt-5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Worst-affected nodes
+                </div>
+                <ul className="mt-2 space-y-1 text-[13px] font-mono">
+                  {active.worst_nodes.map((n) => (
+                    <li key={n.node} className="flex items-center justify-between gap-3">
+                      <span className="text-slate-300">{n.node}</span>
+                      <span
+                        className={
+                          n.min_pressure_m < 14 ? "text-rose-300" : "text-slate-400"
+                        }
+                      >
+                        min {n.min_pressure_m.toFixed(1)} m
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Raw JSON */}
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Raw JSON
+                </div>
+                <pre className="mt-3 max-h-[380px] overflow-auto rounded-md border border-white/10 bg-black/40 p-3 text-[12px] leading-relaxed text-slate-200">
+                  <code>{json}</code>
+                </pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-4 text-xs text-slate-500">
+          Load the same file in Python with{" "}
+          <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px] text-slate-300">
+            json.load(open(&quot;results/{active.run}.json&quot;))
+          </code>
+          .
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function MetricCell({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "good" | "bad" | "info" | "neutral";
+}) {
+  const toneClass = {
+    good: "text-emerald-300",
+    bad: "text-rose-300",
+    info: "text-cyan-200",
+    neutral: "text-slate-200",
+  }[tone];
+  return (
+    <div className="rounded-md border border-white/10 bg-white/[0.03] px-3 py-2">
+      <div className="text-[10px] uppercase tracking-wider text-slate-500">{label}</div>
+      <div className={`mt-1 font-mono text-sm ${toneClass}`}>{value}</div>
+    </div>
+  );
+}
