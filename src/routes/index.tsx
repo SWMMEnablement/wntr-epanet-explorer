@@ -41,6 +41,7 @@ const artifacts = [
     title: "ensemble_runner.py",
     tag: "CLI + Python API",
     bestFor: "Best for batch simulations & CI pipelines",
+    tagline: "Run 100 pipe-break scenarios in ~3 minutes on Net3.",
     desc: "Monte Carlo runner for leaks, pipe breaks, and seismic scenarios. Persists per-run JSON and aggregates WSA, Todini, low-pressure fraction, and population impact into summary.csv/json.",
     cmd: "python ensemble_runner.py --inp Net3.inp --scenario earthquake --n 50",
     href: "/downloads/ensemble_runner.py",
@@ -52,6 +53,7 @@ const artifacts = [
     title: "pipe_break_scenario.ipynb",
     tag: "Jupyter notebook",
     bestFor: "Best for interactive exploration & teaching",
+    tagline: "One pipe closure, four plots, every metric — reproducible end-to-end.",
     desc: "End-to-end pipe-break scenario on Net3: baseline vs 24-h closure of pipe 125, with resilience and water-quality metrics, pressure timeseries, delivered demand, a min-pressure map, and chlorine plots.",
     cmd: "jupyter lab pipe_break_scenario.ipynb",
     href: "/downloads/pipe_break_scenario.ipynb",
@@ -63,6 +65,7 @@ const artifacts = [
     title: "WNTR_GUIDE.md",
     tag: "Step-by-step guide",
     bestFor: "Best for onboarding a new team member",
+    tagline: "From pip install to round-tripped .inp in under 20 minutes.",
     desc: "Install → load .inp → mutate model (PDD, controls, leaks) → run EpanetSimulator vs WNTRSimulator → compute metrics → write back to .inp v2.2, including the leak-export caveat.",
     cmd: "open WNTR_GUIDE.md",
     href: "/downloads/WNTR_GUIDE.md",
@@ -79,24 +82,32 @@ const scenarios = [
 
 const metrics = [
   {
-    abbr: "WSA",
+    col: "wsa",
     name: "Water Service Availability",
-    desc: "Ratio of delivered demand to required demand, aggregated over the simulation. 1.0 = fully served; drops as pressure-dependent demand fails.",
+    formula: "delivered demand / required demand (PDD)",
+    range: "0 – 1",
+    desc: "Volume of demand actually delivered under pressure-driven demand, divided by required demand. 1.0 = fully served. Below ~0.85 is a real service shortfall.",
   },
   {
-    abbr: "Todini",
+    col: "todini",
     name: "Todini Resilience Index",
-    desc: "Surplus energy at demand nodes relative to the minimum required. Higher = more headroom to absorb disruptions.",
+    formula: "1 − (dissipated power / input power)",
+    range: "0 – 1",
+    desc: "Energy-based resilience: surplus power at demand nodes over required power. Closer to 1 = more headroom to absorb disruptions; near 0 = strained.",
   },
   {
-    abbr: "Low-P frac",
+    col: "low_pressure_frac",
     name: "Low-pressure fraction",
-    desc: "Fraction of junction-hours below a pressure threshold (default 14 m / 20 psi). A blunt but readable stress indicator.",
+    formula: "junction-hours below Pmin / total junction-hours",
+    range: "0 – 1",
+    desc: "Fraction of node-time steps below a critical pressure (default 14 m / 20 psi). Warns of contamination-intrusion and fire-flow risk even when WSA looks OK.",
   },
   {
-    abbr: "Pop impact",
+    col: "pop_impacted",
     name: "Population impacted",
-    desc: "Sum of population at nodes that fell below the pressure threshold at any point in the run, using node-level population attributes.",
+    formula: "Σ population(node) where P < Pmin at any t",
+    range: "0 – total pop.",
+    desc: "Sum of node-level population attributes for junctions that dropped below the threshold. Translates hydraulic failure into human terms for stakeholders.",
   },
 ];
 
@@ -349,6 +360,7 @@ function Index() {
                 </div>
                 <div className="mt-4 font-mono text-sm font-semibold text-slate-100">{a.title}</div>
                 <div className="mt-1 text-[12px] text-cyan-300/80">{a.bestFor}</div>
+                <p className="mt-2 text-[13px] italic text-slate-300">{a.tagline}</p>
                 <p className="mt-3 text-sm leading-relaxed text-slate-400">{a.desc}</p>
                 <pre className="mt-4 overflow-x-auto rounded-md border border-white/10 bg-black/40 p-3 text-[12px] text-cyan-200">
                   <code>{a.cmd}</code>
@@ -396,19 +408,41 @@ function Index() {
           What every column in <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">summary.csv</code> means
           — so you don&apos;t have to guess when comparing runs.
         </p>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          {metrics.map((m) => (
-            <div key={m.abbr} className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
-              <div className="flex items-baseline gap-2">
-                <span className="rounded bg-cyan-400/15 px-2 py-0.5 font-mono text-[12px] text-cyan-200">
-                  {m.abbr}
-                </span>
-                <span className="text-sm font-semibold text-slate-100">{m.name}</span>
-              </div>
-              <p className="mt-2 text-sm text-slate-400">{m.desc}</p>
-            </div>
-          ))}
+        <div className="mt-6 overflow-hidden rounded-xl border border-white/10">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-white/[0.04] text-[11px] uppercase tracking-wider text-slate-400">
+              <tr>
+                <th className="px-4 py-2.5 font-medium">Column</th>
+                <th className="px-4 py-2.5 font-medium">Metric</th>
+                <th className="px-4 py-2.5 font-medium">Formula</th>
+                <th className="px-4 py-2.5 font-medium">Range</th>
+              </tr>
+            </thead>
+            <tbody>
+              {metrics.map((m) => (
+                <tr key={m.col} className="border-t border-white/10 align-top">
+                  <td className="px-4 py-3">
+                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">
+                      {m.col}
+                    </code>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="text-sm font-semibold text-slate-100">{m.name}</div>
+                    <p className="mt-1 text-[13px] text-slate-400">{m.desc}</p>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-slate-300">{m.formula}</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">{m.range}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+        <p className="mt-3 text-xs text-slate-500">
+          All metrics are aggregated across the ensemble in{" "}
+          <code className="rounded bg-white/10 px-1.5 py-0.5 text-[11px]">summary.csv</code>; per-run timeseries and
+          raw values are kept in <code className="rounded bg-white/10 px-1.5 py-0.5 text-[11px]">summary.json</code>{" "}
+          for deeper analysis.
+        </p>
 
         {/* Leak-export caveat */}
         <div className="mt-6 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] p-5">
