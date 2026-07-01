@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   Activity,
+  ArrowUpDown,
   Download,
   FileJson,
   FileText,
@@ -12,6 +13,7 @@ import {
   MessageCircle,
   Notebook,
   Scale,
+  Search,
   Shield,
   Terminal,
   Waves,
