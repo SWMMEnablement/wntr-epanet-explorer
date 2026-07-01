@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  ArrowUpDown,
   Download,
   FileJson,
   FileText,
@@ -12,6 +13,7 @@ import {
   MessageCircle,
   Notebook,
   Scale,
+  Search,
   Shield,
   Terminal,
   Waves,
@@ -720,6 +722,65 @@ function MetricTooltip({ label, tip, href }: { label: string; tip: string; href:
 
 function ScenarioDrilldown() {
   const [selectedRun, setSelectedRun] = useState(runDetails[1].run);
+  const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<"run" | "scenario" | "wsa" | "todini" | "low_pressure_frac" | "pop_impacted" | "runtime_s">("run");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const filteredRuns = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return runDetails;
+    return runDetails.filter((r) => {
+      const hay = [
+        r.run,
+        r.scenario,
+        r.perturbation.type,
+        r.perturbation.target,
+        String(r.seed),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [query]);
+
+  const sortedRuns = useMemo(() => {
+    const sorted = [...filteredRuns].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case "run":
+          cmp = a.run.localeCompare(b.run);
+          break;
+        case "scenario":
+          cmp = a.scenario.localeCompare(b.scenario);
+          break;
+        case "wsa":
+          cmp = a.metrics.wsa - b.metrics.wsa;
+          break;
+        case "todini":
+          cmp = a.metrics.todini - b.metrics.todini;
+          break;
+        case "low_pressure_frac":
+          cmp = a.metrics.low_pressure_frac - b.metrics.low_pressure_frac;
+          break;
+        case "pop_impacted":
+          cmp = a.metrics.pop_impacted - b.metrics.pop_impacted;
+          break;
+        case "runtime_s":
+          cmp = a.runtime_s - b.runtime_s;
+          break;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return sorted;
+  }, [filteredRuns, sortKey, sortDir]);
+
+  // If the selected run drops out of the filtered list, fall back to the first visible run.
+  useEffect(() => {
+    if (sortedRuns.length && !sortedRuns.some((r) => r.run === selectedRun)) {
+      setSelectedRun(sortedRuns[0].run);
+    }
+  }, [sortedRuns, selectedRun]);
+
   const active = runDetails.find((r) => r.run === selectedRun) ?? runDetails[0];
 
   const json = JSON.stringify(
@@ -742,6 +803,16 @@ function ScenarioDrilldown() {
     earthquake: "text-fuchsia-200 bg-fuchsia-400/10 border-fuchsia-400/30",
   };
 
+  const sortLabels: Record<typeof sortKey, string> = {
+    run: "Run name",
+    scenario: "Scenario",
+    wsa: "WSA",
+    todini: "Todini",
+    low_pressure_frac: "Low-pressure fraction",
+    pop_impacted: "Population impact",
+    runtime_s: "Runtime",
+  };
+
   return (
     <section className="border-b border-white/10 bg-black/10">
       <div className="mx-auto max-w-6xl px-6 py-14">
@@ -757,42 +828,90 @@ function ScenarioDrilldown() {
 
         <div className="mt-6 grid gap-5 lg:grid-cols-[280px_1fr]">
           {/* Run list */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2">
-            <div className="px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-slate-500">
-              results/
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search run, scenario, target..."
+                  className="w-full rounded-md border border-white/10 bg-black/20 py-2 pl-8 pr-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <select
+                    value={sortKey}
+                    onChange={(e) => setSortKey(e.target.value as typeof sortKey)}
+                    className="w-full appearance-none rounded-md border border-white/10 bg-black/20 py-1.5 pl-3 pr-8 text-sm text-slate-100 focus:border-cyan-400/50 focus:outline-none"
+                  >
+                    {Object.entries(sortLabels).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        Sort by {label.toLowerCase()}
+                      </option>
+                    ))}
+                  </select>
+                  <ArrowUpDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                  aria-label={sortDir === "asc" ? "Sort descending" : "Sort ascending"}
+                  className="grid h-8 w-8 place-items-center rounded-md border border-white/10 bg-black/20 text-slate-300 transition hover:border-cyan-400/50 hover:text-cyan-200"
+                >
+                  {sortDir === "asc" ? "↑" : "↓"}
+                </button>
+              </div>
+              <div className="px-1 text-[11px] text-slate-500">
+                {sortedRuns.length} run{sortedRuns.length === 1 ? "" : "s"} found
+              </div>
             </div>
-            <ul className="flex flex-col gap-1">
-              {runDetails.map((r) => {
-                const isActive = r.run === selectedRun;
-                const failing = r.metrics.wsa < 0.8;
-                return (
-                  <li key={r.run}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedRun(r.run)}
-                      className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition ${
-                        isActive
-                          ? "border-cyan-400/50 bg-cyan-400/10 text-cyan-100"
-                          : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.04]"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <FileJson
-                          className={`h-3.5 w-3.5 ${isActive ? "text-cyan-300" : "text-slate-500"}`}
-                        />
-                        <span className="font-mono text-[13px]">{r.run}.json</span>
-                      </span>
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          failing ? "bg-rose-400" : "bg-emerald-400"
-                        }`}
-                        aria-label={failing ? "below WSA threshold" : "healthy"}
-                      />
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2">
+              <div className="px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-slate-500">
+                results/
+              </div>
+              {sortedRuns.length === 0 ? (
+                <div className="px-3 py-6 text-center text-sm text-slate-500">
+                  No runs match your search.
+                </div>
+              ) : (
+                <ul className="flex flex-col gap-1">
+                  {sortedRuns.map((r) => {
+                    const isActive = r.run === selectedRun;
+                    const failing = r.metrics.wsa < 0.8;
+                    return (
+                      <li key={r.run}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRun(r.run)}
+                          className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition ${
+                            isActive
+                              ? "border-cyan-400/50 bg-cyan-400/10 text-cyan-100"
+                              : "border-transparent text-slate-300 hover:border-white/10 hover:bg-white/[0.04]"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <FileJson
+                              className={`h-3.5 w-3.5 ${isActive ? "text-cyan-300" : "text-slate-500"}`}
+                            />
+                            <span className="font-mono text-[13px]">{r.run}.json</span>
+                          </span>
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              failing ? "bg-rose-400" : "bg-emerald-400"
+                            }`}
+                            aria-label={failing ? "below WSA threshold" : "healthy"}
+                          />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
           </div>
 
           {/* Detail panel */}
