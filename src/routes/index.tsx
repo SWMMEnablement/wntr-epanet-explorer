@@ -360,6 +360,7 @@ function Index() {
                 </div>
                 <div className="mt-4 font-mono text-sm font-semibold text-slate-100">{a.title}</div>
                 <div className="mt-1 text-[12px] text-cyan-300/80">{a.bestFor}</div>
+                <p className="mt-2 text-[13px] italic text-slate-300">{a.tagline}</p>
                 <p className="mt-3 text-sm leading-relaxed text-slate-400">{a.desc}</p>
                 <pre className="mt-4 overflow-x-auto rounded-md border border-white/10 bg-black/40 p-3 text-[12px] text-cyan-200">
                   <code>{a.cmd}</code>
