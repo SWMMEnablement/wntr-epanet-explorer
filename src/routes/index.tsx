@@ -278,14 +278,15 @@ function Index() {
               Stress-test water networks with reproducible scenario ensembles.
             </h1>
             <p className="mt-4 max-w-xl text-base text-slate-300">
-              Drop in an EPANET <code className="rounded bg-white/10 px-1.5 py-0.5 text-[13px]">.inp</code>, run
-              hundreds of leak, pipe-break, or earthquake scenarios, and summarize WSA, Todini, and pressure resilience
-              across the whole ensemble.
+              Download the toolkit, point it at an EPANET{" "}
+              <code className="rounded bg-white/10 px-1.5 py-0.5 text-[13px]">.inp</code> locally, and run reproducible
+              leak, pipe-isolation, or earthquake ensembles with WSA, Todini, and pressure resilience metrics.
             </p>
             <p className="mt-3 max-w-xl text-sm text-slate-400">
               Designed for utility resilience teams stress-testing distribution networks — from 500-pipe demo systems
-              to 10,000+ pipe production models.
+              to 10,000+ pipe production models. Runs entirely local; nothing is uploaded from this site.
             </p>
+
             <div className="mt-7 flex flex-wrap gap-3">
               <a
                 href="#artifacts"
