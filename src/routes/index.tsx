@@ -515,10 +515,17 @@ function Index() {
       {/* Example output — visual proof */}
       <section className="border-y border-white/10 bg-black/20">
         <div className="mx-auto max-w-6xl px-6 py-14">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Example output</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Example output</h2>
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+              Synthetic
+            </span>
+          </div>
           <p className="mt-2 max-w-2xl text-sm text-slate-400">
-            A slice of <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">summary.csv</code> after a
-            100-run pipe-break ensemble on Net3. One row per scenario, ready to feed into pandas or your BI tool.
+            Illustrative shape of <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">summary.csv</code>
+            {" "}after a 100-run pipe-<em>isolation</em> ensemble on Net3 (single pipe status → closed; not a physical
+            burst with valve isolation and repair). Numbers below are not from a real WNTR run — replace with your own
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">results/summary.csv</code>.
           </p>
           <div className="mt-5 overflow-hidden rounded-xl border border-white/10 bg-[oklch(0.19_0.04_245)]">
             <div className="flex items-center gap-2 border-b border-white/10 bg-black/40 px-4 py-2 text-[11px] font-mono text-slate-400">
@@ -527,6 +534,7 @@ function Index() {
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
               <span className="ml-3">results/summary.csv</span>
             </div>
+
             <table className="w-full text-left text-sm">
               <thead className="bg-white/[0.03] text-[11px] uppercase tracking-wider text-slate-500">
                 <tr>
