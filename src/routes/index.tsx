@@ -422,70 +422,76 @@ function Index() {
                   <td className="px-4 py-3 text-sm font-semibold text-slate-100">
                     <MetricTooltip
                       label="Water Service Availability"
-                      tip="WNTR computes WSA as the fraction of required demand actually delivered under pressure-driven demand."
+                      tip="WNTR computes WSA as delivered demand divided by expected demand at each node and timestep."
                       href="https://usepa.github.io/WNTR/apidoc/wntr.metrics.hydraulic.water_service_availability.html"
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">wsa</code>
+                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">wsa_volume_weighted</code>
                   </td>
                   <td className="px-4 py-3 text-[13px] text-slate-400">
-                    Fraction of total demand that is actually delivered to customers under pressure-driven demand (PDD).
-                    0 = no service, 1 = full supply.
+                    <code className="text-cyan-200">Σ delivered / Σ expected</code> across junctions and timesteps under PDD.
+                    Zero-expected-demand nodes yield <code>NaN</code> and are dropped. Toolkit also emits{" "}
+                    <code>wsa_node_time_mean</code> for the un-weighted average.
                   </td>
-                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – 1</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">≥ 0 (typ. 0 – 1; &gt;1 possible when delivered exceeds expected)</td>
                 </tr>
                 <tr className="border-t border-white/10 align-top">
                   <td className="px-4 py-3 text-sm font-semibold text-slate-100">
                     <MetricTooltip
                       label="Todini Resilience Index"
-                      tip="The Todini index measures surplus power at demand junctions relative to the minimum required power."
+                      tip="Surplus hydraulic power above the required-pressure threshold, returned as a time series."
                       href="https://usepa.github.io/WNTR/apidoc/wntr.metrics.hydraulic.todini_index.html"
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">todini</code>
+                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">todini_outage_mean</code>
                   </td>
                   <td className="px-4 py-3 text-[13px] text-slate-400">
-                    Energy-based resilience: 1 – (total dissipated power / total input power). Values near 1 mean the network
-                    has lots of surplus capacity.
+                    <code className="text-cyan-200">(P_out − P_required) / (P_in,res + P_in,pump − P_required)</code>,
+                    per timestep, with <code>P_required</code> at 14.06 m (20 psi). Toolkit reports mean over the outage
+                    window plus <code>todini_min</code>; values <em>can</em> be negative under severe stress.
                   </td>
-                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – 1</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">unbounded (typ. ≈ 0 – 1, negative under stress)</td>
                 </tr>
                 <tr className="border-t border-white/10 align-top">
                   <td className="px-4 py-3 text-sm font-semibold text-slate-100">
                     <MetricTooltip
                       label="Low-pressure fraction"
-                      tip="WNTR's query helper flags node-time pairs where pressure drops below a critical threshold."
+                      tip="Fraction of node-time pairs where junction pressure falls below the critical threshold."
                       href="https://usepa.github.io/WNTR/apidoc/wntr.metrics.misc.query.html"
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">low_pressure_frac</code>
+                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">low_pressure_node_time_frac</code>
                   </td>
                   <td className="px-4 py-3 text-[13px] text-slate-400">
-                    Fraction of time-steps (or node-time instances) where junction pressure falls below the critical
-                    threshold (default 20 psi).
+                    <code className="text-cyan-200">count(p &lt; 14.06 m) / count(all junction-time pairs)</code>.
+                    Toolkit also emits <code>junctions_ever_low_pressure_frac</code> so you can distinguish
+                    "brief dip" from "sustained outage".
                   </td>
                   <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – 1</td>
                 </tr>
                 <tr className="border-t border-white/10 align-top">
                   <td className="px-4 py-3 text-sm font-semibold text-slate-100">
                     <MetricTooltip
-                      label="Population impact"
-                      tip="Population impacted counts people attached to nodes that fail a comparison, such as demand below 90% of expected."
+                      label="Population impacted (estimated)"
+                      tip="Population is derived from expected demand at 200 gal/person/day by default; not a demographic count."
                       href="https://usepa.github.io/WNTR/apidoc/wntr.metrics.misc.population_impacted.html"
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">pop_impact</code>
+                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">peak_population_impacted</code>
                   </td>
                   <td className="px-4 py-3 text-[13px] text-slate-400">
-                    Estimated number of people underserved, based on nodal base demand and population. Only meaningful if your
-                    model includes population data per node.
+                    Uses <code>wntr.metrics.population</code>, which estimates residents from average expected demand at
+                    a default rate of <strong>200 gal/person/day</strong>. Industrial, commercial, and irrigation demand
+                    inflate this estimate — supply your own per-node population or a demand-category filter for real
+                    demographic impact.
                   </td>
-                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – total pop.</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – estimated total pop.</td>
                 </tr>
+
               </tbody>
             </table>
           </TooltipProvider>
