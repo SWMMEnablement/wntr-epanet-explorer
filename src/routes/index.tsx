@@ -278,14 +278,15 @@ function Index() {
               Stress-test water networks with reproducible scenario ensembles.
             </h1>
             <p className="mt-4 max-w-xl text-base text-slate-300">
-              Drop in an EPANET <code className="rounded bg-white/10 px-1.5 py-0.5 text-[13px]">.inp</code>, run
-              hundreds of leak, pipe-break, or earthquake scenarios, and summarize WSA, Todini, and pressure resilience
-              across the whole ensemble.
+              Download the toolkit, point it at an EPANET{" "}
+              <code className="rounded bg-white/10 px-1.5 py-0.5 text-[13px]">.inp</code> locally, and run reproducible
+              leak, pipe-isolation, or earthquake ensembles with WSA, Todini, and pressure resilience metrics.
             </p>
             <p className="mt-3 max-w-xl text-sm text-slate-400">
               Designed for utility resilience teams stress-testing distribution networks — from 500-pipe demo systems
-              to 10,000+ pipe production models.
+              to 10,000+ pipe production models. Runs entirely local; nothing is uploaded from this site.
             </p>
+
             <div className="mt-7 flex flex-wrap gap-3">
               <a
                 href="#artifacts"
@@ -312,13 +313,16 @@ function Index() {
           <div className="rounded-xl border border-white/10 bg-black/30 p-4 shadow-2xl shadow-cyan-500/5 backdrop-blur">
             <div className="flex items-center justify-between px-1 pb-2 text-[11px] text-slate-400">
               <span className="font-mono">J35 · pressure (m) · 48 h</span>
-              <span className="flex items-center gap-3">
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-cyan-300" /> baseline
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-rose-400" /> pipe break
-                </span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+                Synthetic
+              </span>
+            </div>
+            <div className="flex items-center gap-3 px-1 pb-2 text-[11px] text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-cyan-300" /> baseline
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-rose-400" /> pipe isolation (P125 closed)
               </span>
             </div>
             <svg viewBox="0 0 600 180" className="w-full">
@@ -419,70 +423,76 @@ function Index() {
                   <td className="px-4 py-3 text-sm font-semibold text-slate-100">
                     <MetricTooltip
                       label="Water Service Availability"
-                      tip="WNTR computes WSA as the fraction of required demand actually delivered under pressure-driven demand."
+                      tip="WNTR computes WSA as delivered demand divided by expected demand at each node and timestep."
                       href="https://usepa.github.io/WNTR/apidoc/wntr.metrics.hydraulic.water_service_availability.html"
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">wsa</code>
+                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">wsa_volume_weighted</code>
                   </td>
                   <td className="px-4 py-3 text-[13px] text-slate-400">
-                    Fraction of total demand that is actually delivered to customers under pressure-driven demand (PDD).
-                    0 = no service, 1 = full supply.
+                    <code className="text-cyan-200">Σ delivered / Σ expected</code> across junctions and timesteps under PDD.
+                    Zero-expected-demand nodes yield <code>NaN</code> and are dropped. Toolkit also emits{" "}
+                    <code>wsa_node_time_mean</code> for the un-weighted average.
                   </td>
-                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – 1</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">≥ 0 (typ. 0 – 1; &gt;1 possible when delivered exceeds expected)</td>
                 </tr>
                 <tr className="border-t border-white/10 align-top">
                   <td className="px-4 py-3 text-sm font-semibold text-slate-100">
                     <MetricTooltip
                       label="Todini Resilience Index"
-                      tip="The Todini index measures surplus power at demand junctions relative to the minimum required power."
+                      tip="Surplus hydraulic power above the required-pressure threshold, returned as a time series."
                       href="https://usepa.github.io/WNTR/apidoc/wntr.metrics.hydraulic.todini_index.html"
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">todini</code>
+                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">todini_outage_mean</code>
                   </td>
                   <td className="px-4 py-3 text-[13px] text-slate-400">
-                    Energy-based resilience: 1 – (total dissipated power / total input power). Values near 1 mean the network
-                    has lots of surplus capacity.
+                    <code className="text-cyan-200">(P_out − P_required) / (P_in,res + P_in,pump − P_required)</code>,
+                    per timestep, with <code>P_required</code> at 14.06 m (20 psi). Toolkit reports mean over the outage
+                    window plus <code>todini_min</code>; values <em>can</em> be negative under severe stress.
                   </td>
-                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – 1</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">unbounded (typ. ≈ 0 – 1, negative under stress)</td>
                 </tr>
                 <tr className="border-t border-white/10 align-top">
                   <td className="px-4 py-3 text-sm font-semibold text-slate-100">
                     <MetricTooltip
                       label="Low-pressure fraction"
-                      tip="WNTR's query helper flags node-time pairs where pressure drops below a critical threshold."
+                      tip="Fraction of node-time pairs where junction pressure falls below the critical threshold."
                       href="https://usepa.github.io/WNTR/apidoc/wntr.metrics.misc.query.html"
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">low_pressure_frac</code>
+                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">low_pressure_node_time_frac</code>
                   </td>
                   <td className="px-4 py-3 text-[13px] text-slate-400">
-                    Fraction of time-steps (or node-time instances) where junction pressure falls below the critical
-                    threshold (default 20 psi).
+                    <code className="text-cyan-200">count(p &lt; 14.06 m) / count(all junction-time pairs)</code>.
+                    Toolkit also emits <code>junctions_ever_low_pressure_frac</code> so you can distinguish
+                    "brief dip" from "sustained outage".
                   </td>
                   <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – 1</td>
                 </tr>
                 <tr className="border-t border-white/10 align-top">
                   <td className="px-4 py-3 text-sm font-semibold text-slate-100">
                     <MetricTooltip
-                      label="Population impact"
-                      tip="Population impacted counts people attached to nodes that fail a comparison, such as demand below 90% of expected."
+                      label="Population impacted (estimated)"
+                      tip="Population is derived from expected demand at 200 gal/person/day by default; not a demographic count."
                       href="https://usepa.github.io/WNTR/apidoc/wntr.metrics.misc.population_impacted.html"
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">pop_impact</code>
+                    <code className="rounded bg-cyan-400/15 px-1.5 py-0.5 font-mono text-[12px] text-cyan-200">peak_population_impacted</code>
                   </td>
                   <td className="px-4 py-3 text-[13px] text-slate-400">
-                    Estimated number of people underserved, based on nodal base demand and population. Only meaningful if your
-                    model includes population data per node.
+                    Uses <code>wntr.metrics.population</code>, which estimates residents from average expected demand at
+                    a default rate of <strong>200 gal/person/day</strong>. Industrial, commercial, and irrigation demand
+                    inflate this estimate — supply your own per-node population or a demand-category filter for real
+                    demographic impact.
                   </td>
-                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – total pop.</td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-slate-400">0 – estimated total pop.</td>
                 </tr>
+
               </tbody>
             </table>
           </TooltipProvider>
@@ -506,10 +516,17 @@ function Index() {
       {/* Example output — visual proof */}
       <section className="border-y border-white/10 bg-black/20">
         <div className="mx-auto max-w-6xl px-6 py-14">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Example output</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Example output</h2>
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+              Synthetic
+            </span>
+          </div>
           <p className="mt-2 max-w-2xl text-sm text-slate-400">
-            A slice of <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">summary.csv</code> after a
-            100-run pipe-break ensemble on Net3. One row per scenario, ready to feed into pandas or your BI tool.
+            Illustrative shape of <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">summary.csv</code>
+            {" "}after a 100-run pipe-<em>isolation</em> ensemble on Net3 (single pipe status → closed; not a physical
+            burst with valve isolation and repair). Numbers below are not from a real WNTR run — replace with your own
+            <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">results/summary.csv</code>.
           </p>
           <div className="mt-5 overflow-hidden rounded-xl border border-white/10 bg-[oklch(0.19_0.04_245)]">
             <div className="flex items-center gap-2 border-b border-white/10 bg-black/40 px-4 py-2 text-[11px] font-mono text-slate-400">
@@ -518,6 +535,7 @@ function Index() {
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
               <span className="ml-3">results/summary.csv</span>
             </div>
+
             <table className="w-full text-left text-sm">
               <thead className="bg-white/[0.03] text-[11px] uppercase tracking-wider text-slate-500">
                 <tr>
@@ -595,23 +613,16 @@ function Index() {
           <div className="mt-6 flex items-start gap-3 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.04] p-4 text-sm text-slate-300">
             <Info className="mt-0.5 h-4 w-4 flex-none text-cyan-300" />
             <div>
-              <span className="font-semibold text-slate-100">Don&apos;t have Net3.inp?</span> It ships with the WNTR
-              examples. Grab it from{" "}
-              <a
-                href="https://github.com/USEPA/WNTR/blob/main/examples/networks/Net3.inp"
-                target="_blank"
-                rel="noreferrer"
-                className="text-cyan-300 underline decoration-cyan-400/40 underline-offset-2 hover:decoration-cyan-300"
-              >
-                USEPA/WNTR · examples/networks/Net3.inp
-              </a>{" "}
-              or load it in Python with{" "}
-              <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">
-                wntr.examples.networks.Net3().inp_file_name
-              </code>
-              .
+              <span className="font-semibold text-slate-100">Don&apos;t have Net3.inp?</span> WNTR&apos;s{" "}
+              <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">examples/</code> folder is{" "}
+              <em>not</em> shipped with the PyPI or conda package — clone the repo to get it:
+              <pre className="mt-2 overflow-x-auto rounded-md border border-white/10 bg-black/40 p-3 text-[12px] text-slate-200">
+                <code>{`git clone --depth 1 https://github.com/USEPA/WNTR.git
+cp WNTR/examples/networks/Net3.inp .`}</code>
+              </pre>
             </div>
           </div>
+
         </div>
       </section>
 
@@ -638,23 +649,35 @@ function Index() {
           <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Quickstart</h2>
           <div className="mt-5 grid gap-5 lg:grid-cols-2">
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
-              <div className="text-sm font-semibold">1. Install</div>
+              <div className="text-sm font-semibold">1. Install (pinned)</div>
               <pre className="mt-3 overflow-x-auto rounded-md border border-white/10 bg-black/40 p-4 text-[12px] text-slate-200">
-                <code>{`pip install wntr pandas numpy matplotlib
+                <code>{`# EPANET 2.2 ships with WNTR
+pip install wntr==1.4.0 pandas==2.2.* numpy==1.26.* matplotlib==3.9.*
 # optional, for the notebook
-pip install jupyterlab`}</code>
+pip install jupyterlab==4.*`}</code>
               </pre>
+              <p className="mt-2 text-[11px] text-slate-500">
+                Pin your stack so re-running the same seed next quarter gives byte-identical metrics.
+              </p>
             </div>
+
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
               <div className="text-sm font-semibold">2. Run an ensemble</div>
               <pre className="mt-3 overflow-x-auto rounded-md border border-white/10 bg-black/40 p-4 text-[12px] text-slate-200">
                 <code>{`python ensemble_runner.py \\
   --inp Net3.inp \\
-  --scenario pipe_breaks \\
-  --n 100 \\
+  --scenario pipe_isolation \\
+  --n 100 --seed 1000 \\
+  --simulator wntr --demand-model PDD \\
+  --required-pressure-m 14.06 \\
   --out results/`}</code>
               </pre>
+              <p className="mt-2 text-[11px] text-slate-500">
+                <code>pipe_isolation</code> closes a single pipe (status → 0). Use <code>pipe_break_unisolated</code> or
+                <code> pipe_break_repair</code> for physical bursts with valve isolation and restoration.
+              </p>
             </div>
+
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
               <div className="text-sm font-semibold">3. Inspect resilience</div>
               <pre className="mt-3 overflow-x-auto rounded-md border border-white/10 bg-black/40 p-4 text-[12px] text-slate-200">
@@ -676,8 +699,62 @@ wntr.network.write_inpfile(wn, "Net3.modified.inp", version=2.2)`}</code>
         </div>
       </section>
 
+      {/* Reproducibility — run-record provenance */}
+      <section className="mx-auto max-w-6xl px-6 py-14">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
+          Run-record provenance
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate-400">
+          A random seed alone doesn&apos;t make an ensemble reproducible. Every run JSON records the exact software
+          stack, solver, thresholds, and convergence status so a re-run next year gives the same numbers.
+        </p>
+        <div className="mt-5 overflow-hidden rounded-xl border border-white/10 bg-[oklch(0.19_0.04_245)]">
+          <div className="flex items-center gap-2 border-b border-white/10 bg-black/40 px-4 py-2 text-[11px] font-mono text-slate-400">
+            <span className="h-2.5 w-2.5 rounded-full bg-rose-400/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-300/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
+            <span className="ml-3">results/run_0042.json</span>
+          </div>
+          <pre className="overflow-x-auto p-4 text-[12px] leading-relaxed text-slate-200">
+            <code>{`{
+  "schema_version": "1.0",
+  "toolkit_version": "0.3.1",
+  "wntr_version": "1.4.0",
+  "epanet_version": "2.2",
+  "python_version": "3.11.9",
+  "model_sha256": "b4e1…9a2c",
+  "scenario_config_sha256": "77f0…41de",
+  "simulator": "WNTRSimulator",
+  "demand_model": "PDD",
+  "pressure_threshold_m": 14.06,
+  "seed": 1000,
+  "scenario": {
+    "family": "pipe_isolation",
+    "target": "P125",
+    "start_hr": 8.0,
+    "duration_hr": 24.0
+  },
+  "converged": true,
+  "warnings": [],
+  "metrics": {
+    "wsa_volume_weighted": 0.871,
+    "wsa_node_time_mean": 0.902,
+    "todini_outage_mean": 0.418,
+    "todini_min": 0.127,
+    "low_pressure_node_time_frac": 0.184,
+    "junctions_ever_low_pressure_frac": 0.320,
+    "peak_population_impacted": 18420,
+    "population_hours_impacted": 128900
+  },
+  "population_estimator": { "method": "demand_derived", "gpcd": 200 }
+}`}</code>
+          </pre>
+        </div>
+      </section>
+
       {/* License & support */}
       <section className="mx-auto max-w-6xl px-6 py-14">
+
         <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">License &amp; support</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
@@ -694,23 +771,21 @@ wntr.network.write_inpfile(wn, "Net3.modified.inp", version=2.2)`}</code>
             className="group rounded-lg border border-white/10 bg-white/[0.03] p-5 transition hover:border-cyan-400/40"
           >
             <Github className="h-5 w-5 text-cyan-300" />
-            <div className="mt-3 text-sm font-semibold group-hover:text-cyan-200">Source &amp; issues</div>
+            <div className="mt-3 text-sm font-semibold group-hover:text-cyan-200">Upstream WNTR</div>
             <p className="mt-1.5 text-sm text-slate-400">
-              File bugs, request scenarios, or send a pull request on the upstream WNTR repository.
+              Solver, metric implementations, and <code className="rounded bg-white/10 px-1 py-0.5 text-[11px]">.inp</code>{" "}
+              I/O live in USEPA/WNTR. File engine/metric bugs there.
             </p>
           </a>
-          <a
-            href="https://github.com/USEPA/WNTR/discussions"
-            target="_blank"
-            rel="noreferrer"
-            className="group rounded-lg border border-white/10 bg-white/[0.03] p-5 transition hover:border-cyan-400/40"
-          >
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
             <MessageCircle className="h-5 w-5 text-cyan-300" />
-            <div className="mt-3 text-sm font-semibold group-hover:text-cyan-200">Ask a question</div>
+            <div className="mt-3 text-sm font-semibold">Toolkit issues</div>
             <p className="mt-1.5 text-sm text-slate-400">
-              Community discussions for modeling questions, PDD tuning, and scenario design.
+              Ensemble runner, scenario samplers, JSON schema, or notebook bugs belong in this toolkit&apos;s own
+              repository — <em>not</em> upstream WNTR. Publish under your org and link here.
             </p>
-          </a>
+          </div>
+
         </div>
       </section>
 
