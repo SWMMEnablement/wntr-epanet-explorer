@@ -665,11 +665,18 @@ pip install jupyterlab==4.*`}</code>
               <pre className="mt-3 overflow-x-auto rounded-md border border-white/10 bg-black/40 p-4 text-[12px] text-slate-200">
                 <code>{`python ensemble_runner.py \\
   --inp Net3.inp \\
-  --scenario pipe_breaks \\
-  --n 100 \\
+  --scenario pipe_isolation \\
+  --n 100 --seed 1000 \\
+  --simulator wntr --demand-model PDD \\
+  --required-pressure-m 14.06 \\
   --out results/`}</code>
               </pre>
+              <p className="mt-2 text-[11px] text-slate-500">
+                <code>pipe_isolation</code> closes a single pipe (status → 0). Use <code>pipe_break_unisolated</code> or
+                <code> pipe_break_repair</code> for physical bursts with valve isolation and restoration.
+              </p>
             </div>
+
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
               <div className="text-sm font-semibold">3. Inspect resilience</div>
               <pre className="mt-3 overflow-x-auto rounded-md border border-white/10 bg-black/40 p-4 text-[12px] text-slate-200">
