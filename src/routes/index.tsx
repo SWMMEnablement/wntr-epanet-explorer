@@ -648,13 +648,18 @@ cp WNTR/examples/networks/Net3.inp .`}</code>
           <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Quickstart</h2>
           <div className="mt-5 grid gap-5 lg:grid-cols-2">
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
-              <div className="text-sm font-semibold">1. Install</div>
+              <div className="text-sm font-semibold">1. Install (pinned)</div>
               <pre className="mt-3 overflow-x-auto rounded-md border border-white/10 bg-black/40 p-4 text-[12px] text-slate-200">
-                <code>{`pip install wntr pandas numpy matplotlib
+                <code>{`# EPANET 2.2 ships with WNTR
+pip install wntr==1.4.0 pandas==2.2.* numpy==1.26.* matplotlib==3.9.*
 # optional, for the notebook
-pip install jupyterlab`}</code>
+pip install jupyterlab==4.*`}</code>
               </pre>
+              <p className="mt-2 text-[11px] text-slate-500">
+                Pin your stack so re-running the same seed next quarter gives byte-identical metrics.
+              </p>
             </div>
+
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
               <div className="text-sm font-semibold">2. Run an ensemble</div>
               <pre className="mt-3 overflow-x-auto rounded-md border border-white/10 bg-black/40 p-4 text-[12px] text-slate-200">
