@@ -612,23 +612,16 @@ function Index() {
           <div className="mt-6 flex items-start gap-3 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.04] p-4 text-sm text-slate-300">
             <Info className="mt-0.5 h-4 w-4 flex-none text-cyan-300" />
             <div>
-              <span className="font-semibold text-slate-100">Don&apos;t have Net3.inp?</span> It ships with the WNTR
-              examples. Grab it from{" "}
-              <a
-                href="https://github.com/USEPA/WNTR/blob/main/examples/networks/Net3.inp"
-                target="_blank"
-                rel="noreferrer"
-                className="text-cyan-300 underline decoration-cyan-400/40 underline-offset-2 hover:decoration-cyan-300"
-              >
-                USEPA/WNTR · examples/networks/Net3.inp
-              </a>{" "}
-              or load it in Python with{" "}
-              <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">
-                wntr.examples.networks.Net3().inp_file_name
-              </code>
-              .
+              <span className="font-semibold text-slate-100">Don&apos;t have Net3.inp?</span> WNTR&apos;s{" "}
+              <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">examples/</code> folder is{" "}
+              <em>not</em> shipped with the PyPI or conda package — clone the repo to get it:
+              <pre className="mt-2 overflow-x-auto rounded-md border border-white/10 bg-black/40 p-3 text-[12px] text-slate-200">
+                <code>{`git clone --depth 1 https://github.com/USEPA/WNTR.git
+cp WNTR/examples/networks/Net3.inp .`}</code>
+              </pre>
             </div>
           </div>
+
         </div>
       </section>
 
