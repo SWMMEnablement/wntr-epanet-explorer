@@ -175,6 +175,47 @@ const runDetails: RunDetail[] = [
   },
 ];
 
+// Extend with synthetic runs so pagination/filtering are meaningful in the demo.
+const scenariosPool = ["pipe_break", "leak", "earthquake"] as const;
+for (let i = 5; i < 32; i++) {
+  const scenario = scenariosPool[i % 3];
+  const seed = 1000 + i;
+  // Deterministic pseudo-random from seed
+  const r = (n: number) => {
+    const x = Math.sin(seed * 9301 + n * 49297) * 233280;
+    return x - Math.floor(x);
+  };
+  const severity = r(1);
+  const wsa = +(1 - severity * (scenario === "earthquake" ? 0.55 : 0.3)).toFixed(3);
+  const todini = +(0.7 - severity * 0.55).toFixed(3);
+  const low_pressure_frac = +(severity * (scenario === "earthquake" ? 0.5 : 0.28)).toFixed(3);
+  const pop_impacted = Math.round(severity * (scenario === "earthquake" ? 60000 : 25000));
+  const target =
+    scenario === "pipe_break"
+      ? `pipe_${Math.round(r(2) * 300)}`
+      : scenario === "leak"
+        ? `J-${Math.round(r(2) * 250)}`
+        : `M${(5.5 + r(2) * 2).toFixed(1)} @ (${(33 + r(3) * 3).toFixed(2)},${(-119 + r(4) * 3).toFixed(2)})`;
+  runDetails.push({
+    run: `run_${String(i).padStart(2, "0")}`,
+    scenario,
+    seed,
+    perturbation: {
+      type: scenario === "pipe_break" ? "pipe_closure" : scenario === "leak" ? "junction_leak" : "seismic_fragility",
+      target,
+      start_h: Math.round(r(5) * 12),
+      duration_h: Math.round(4 + r(6) * 24),
+    },
+    metrics: { wsa, todini, low_pressure_frac, pop_impacted },
+    worst_nodes: [
+      { node: `J-${Math.round(r(7) * 250)}`, min_pressure_m: +(r(8) * 20).toFixed(1) },
+      { node: `J-${Math.round(r(9) * 250)}`, min_pressure_m: +(5 + r(10) * 15).toFixed(1) },
+      { node: `J-${Math.round(r(11) * 250)}`, min_pressure_m: +(10 + r(12) * 15).toFixed(1) },
+    ],
+    runtime_s: +(1.5 + r(13) * 4).toFixed(2),
+  });
+}
+
 // Synthetic pressure curve for the hero preview chart
 function pressurePath(broken: boolean) {
   const pts: string[] = [];
