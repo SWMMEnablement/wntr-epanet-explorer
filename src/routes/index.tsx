@@ -709,23 +709,21 @@ wntr.network.write_inpfile(wn, "Net3.modified.inp", version=2.2)`}</code>
             className="group rounded-lg border border-white/10 bg-white/[0.03] p-5 transition hover:border-cyan-400/40"
           >
             <Github className="h-5 w-5 text-cyan-300" />
-            <div className="mt-3 text-sm font-semibold group-hover:text-cyan-200">Source &amp; issues</div>
+            <div className="mt-3 text-sm font-semibold group-hover:text-cyan-200">Upstream WNTR</div>
             <p className="mt-1.5 text-sm text-slate-400">
-              File bugs, request scenarios, or send a pull request on the upstream WNTR repository.
+              Solver, metric implementations, and <code className="rounded bg-white/10 px-1 py-0.5 text-[11px]">.inp</code>{" "}
+              I/O live in USEPA/WNTR. File engine/metric bugs there.
             </p>
           </a>
-          <a
-            href="https://github.com/USEPA/WNTR/discussions"
-            target="_blank"
-            rel="noreferrer"
-            className="group rounded-lg border border-white/10 bg-white/[0.03] p-5 transition hover:border-cyan-400/40"
-          >
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
             <MessageCircle className="h-5 w-5 text-cyan-300" />
-            <div className="mt-3 text-sm font-semibold group-hover:text-cyan-200">Ask a question</div>
+            <div className="mt-3 text-sm font-semibold">Toolkit issues</div>
             <p className="mt-1.5 text-sm text-slate-400">
-              Community discussions for modeling questions, PDD tuning, and scenario design.
+              Ensemble runner, scenario samplers, JSON schema, or notebook bugs belong in this toolkit&apos;s own
+              repository — <em>not</em> upstream WNTR. Publish under your org and link here.
             </p>
-          </a>
+          </div>
+
         </div>
       </section>
 
