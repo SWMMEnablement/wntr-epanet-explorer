@@ -175,6 +175,47 @@ const runDetails: RunDetail[] = [
   },
 ];
 
+// Extend with synthetic runs so pagination/filtering are meaningful in the demo.
+const scenariosPool = ["pipe_break", "leak", "earthquake"] as const;
+for (let i = 5; i < 32; i++) {
+  const scenario = scenariosPool[i % 3];
+  const seed = 1000 + i;
+  // Deterministic pseudo-random from seed
+  const r = (n: number) => {
+    const x = Math.sin(seed * 9301 + n * 49297) * 233280;
+    return x - Math.floor(x);
+  };
+  const severity = r(1);
+  const wsa = +(1 - severity * (scenario === "earthquake" ? 0.55 : 0.3)).toFixed(3);
+  const todini = +(0.7 - severity * 0.55).toFixed(3);
+  const low_pressure_frac = +(severity * (scenario === "earthquake" ? 0.5 : 0.28)).toFixed(3);
+  const pop_impacted = Math.round(severity * (scenario === "earthquake" ? 60000 : 25000));
+  const target =
+    scenario === "pipe_break"
+      ? `pipe_${Math.round(r(2) * 300)}`
+      : scenario === "leak"
+        ? `J-${Math.round(r(2) * 250)}`
+        : `M${(5.5 + r(2) * 2).toFixed(1)} @ (${(33 + r(3) * 3).toFixed(2)},${(-119 + r(4) * 3).toFixed(2)})`;
+  runDetails.push({
+    run: `run_${String(i).padStart(2, "0")}`,
+    scenario,
+    seed,
+    perturbation: {
+      type: scenario === "pipe_break" ? "pipe_closure" : scenario === "leak" ? "junction_leak" : "seismic_fragility",
+      target,
+      start_h: Math.round(r(5) * 12),
+      duration_h: Math.round(4 + r(6) * 24),
+    },
+    metrics: { wsa, todini, low_pressure_frac, pop_impacted },
+    worst_nodes: [
+      { node: `J-${Math.round(r(7) * 250)}`, min_pressure_m: +(r(8) * 20).toFixed(1) },
+      { node: `J-${Math.round(r(9) * 250)}`, min_pressure_m: +(5 + r(10) * 15).toFixed(1) },
+      { node: `J-${Math.round(r(11) * 250)}`, min_pressure_m: +(10 + r(12) * 15).toFixed(1) },
+    ],
+    runtime_s: +(1.5 + r(13) * 4).toFixed(2),
+  });
+}
+
 // Synthetic pressure curve for the hero preview chart
 function pressurePath(broken: boolean) {
   const pts: string[] = [];
@@ -725,56 +766,65 @@ function ScenarioDrilldown() {
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<"run" | "scenario" | "wsa" | "todini" | "low_pressure_frac" | "pop_impacted" | "runtime_s">("run");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 8;
+
+  type MetricKey = "wsa" | "todini" | "low_pressure_frac" | "pop_impacted";
+  const metricRanges: Record<MetricKey, { min: number; max: number; step: number }> = {
+    wsa: { min: 0, max: 1, step: 0.01 },
+    todini: { min: 0, max: 1, step: 0.01 },
+    low_pressure_frac: { min: 0, max: 1, step: 0.01 },
+    pop_impacted: { min: 0, max: 60000, step: 100 },
+  };
+  const [filters, setFilters] = useState<Record<MetricKey, { min: string; max: string }>>({
+    wsa: { min: "", max: "" },
+    todini: { min: "", max: "" },
+    low_pressure_frac: { min: "", max: "" },
+    pop_impacted: { min: "", max: "" },
+  });
 
   const filteredRuns = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return runDetails;
     return runDetails.filter((r) => {
-      const hay = [
-        r.run,
-        r.scenario,
-        r.perturbation.type,
-        r.perturbation.target,
-        String(r.seed),
-      ]
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
+      if (q) {
+        const hay = [r.run, r.scenario, r.perturbation.type, r.perturbation.target, String(r.seed)]
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      for (const key of Object.keys(filters) as MetricKey[]) {
+        const { min, max } = filters[key];
+        const v = r.metrics[key];
+        if (min !== "" && v < Number(min)) return false;
+        if (max !== "" && v > Number(max)) return false;
+      }
+      return true;
     });
-  }, [query]);
+  }, [query, filters]);
 
   const sortedRuns = useMemo(() => {
     const sorted = [...filteredRuns].sort((a, b) => {
       let cmp = 0;
       switch (sortKey) {
-        case "run":
-          cmp = a.run.localeCompare(b.run);
-          break;
-        case "scenario":
-          cmp = a.scenario.localeCompare(b.scenario);
-          break;
-        case "wsa":
-          cmp = a.metrics.wsa - b.metrics.wsa;
-          break;
-        case "todini":
-          cmp = a.metrics.todini - b.metrics.todini;
-          break;
-        case "low_pressure_frac":
-          cmp = a.metrics.low_pressure_frac - b.metrics.low_pressure_frac;
-          break;
-        case "pop_impacted":
-          cmp = a.metrics.pop_impacted - b.metrics.pop_impacted;
-          break;
-        case "runtime_s":
-          cmp = a.runtime_s - b.runtime_s;
-          break;
+        case "run": cmp = a.run.localeCompare(b.run); break;
+        case "scenario": cmp = a.scenario.localeCompare(b.scenario); break;
+        case "wsa": cmp = a.metrics.wsa - b.metrics.wsa; break;
+        case "todini": cmp = a.metrics.todini - b.metrics.todini; break;
+        case "low_pressure_frac": cmp = a.metrics.low_pressure_frac - b.metrics.low_pressure_frac; break;
+        case "pop_impacted": cmp = a.metrics.pop_impacted - b.metrics.pop_impacted; break;
+        case "runtime_s": cmp = a.runtime_s - b.runtime_s; break;
       }
       return sortDir === "asc" ? cmp : -cmp;
     });
     return sorted;
   }, [filteredRuns, sortKey, sortDir]);
 
-  // If the selected run drops out of the filtered list, fall back to the first visible run.
+  useEffect(() => { setPage(0); }, [query, filters, sortKey, sortDir]);
+
+  const pageCount = Math.max(1, Math.ceil(sortedRuns.length / PAGE_SIZE));
+  const clampedPage = Math.min(page, pageCount - 1);
+  const pageRuns = sortedRuns.slice(clampedPage * PAGE_SIZE, clampedPage * PAGE_SIZE + PAGE_SIZE);
+
   useEffect(() => {
     if (sortedRuns.length && !sortedRuns.some((r) => r.run === selectedRun)) {
       setSelectedRun(sortedRuns[0].run);
@@ -813,18 +863,117 @@ function ScenarioDrilldown() {
     runtime_s: "Runtime",
   };
 
+  const exportCsv = () => {
+    const headers = [
+      "run", "scenario", "seed",
+      "perturbation_type", "perturbation_target", "start_h", "duration_h",
+      "wsa", "todini", "low_pressure_frac", "pop_impacted", "runtime_s",
+    ];
+    const rows = sortedRuns.map((r) => [
+      r.run, r.scenario, r.seed,
+      r.perturbation.type, r.perturbation.target, r.perturbation.start_h, r.perturbation.duration_h,
+      r.metrics.wsa, r.metrics.todini, r.metrics.low_pressure_frac, r.metrics.pop_impacted, r.runtime_s,
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((c) => {
+        const s = String(c);
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      }).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `wntr_runs_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <section className="border-b border-white/10 bg-black/10">
       <div className="mx-auto max-w-6xl px-6 py-14">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
-          Per-scenario drill-down
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm text-slate-400">
-          Every run writes a{" "}
-          <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">results/run_XX.json</code>{" "}
-          file with its metrics, perturbation, and the worst-affected nodes. Pick a run to inspect
-          it — this is exactly what your CI or analysis notebook will load.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
+              Per-scenario drill-down
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-slate-400">
+              Every run writes a{" "}
+              <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">results/run_XX.json</code>{" "}
+              file with its metrics, perturbation, and the worst-affected nodes. Filter, sort, and
+              export the current view — this is exactly what your CI or analysis notebook will load.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={exportCsv}
+            disabled={sortedRuns.length === 0}
+            className="inline-flex items-center gap-2 rounded-md border border-cyan-400/40 bg-cyan-400/10 px-3 py-2 text-xs font-medium text-cyan-200 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Download className="h-3.5 w-3.5" /> Export {sortedRuns.length} rows to CSV
+          </button>
+        </div>
+
+        {/* Metric filters */}
+        <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Metric filters
+            </div>
+            <button
+              type="button"
+              onClick={() => setFilters({
+                wsa: { min: "", max: "" },
+                todini: { min: "", max: "" },
+                low_pressure_frac: { min: "", max: "" },
+                pop_impacted: { min: "", max: "" },
+              })}
+              className="text-[11px] text-slate-500 hover:text-cyan-300"
+            >
+              Reset
+            </button>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {(Object.keys(metricRanges) as MetricKey[]).map((key) => {
+              const r = metricRanges[key];
+              return (
+                <div key={key} className="rounded-md border border-white/10 bg-black/20 p-3">
+                  <div className="text-[10px] uppercase tracking-wider text-slate-500">
+                    {sortLabels[key]}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={r.min}
+                      max={r.max}
+                      step={r.step}
+                      value={filters[key].min}
+                      onChange={(e) => setFilters((f) => ({ ...f, [key]: { ...f[key], min: e.target.value } }))}
+                      placeholder="min"
+                      className="w-full rounded border border-white/10 bg-black/30 px-2 py-1 font-mono text-xs text-slate-100 placeholder:text-slate-600 focus:border-cyan-400/50 focus:outline-none"
+                    />
+                    <span className="text-[10px] text-slate-500">–</span>
+                    <input
+                      type="number"
+                      min={r.min}
+                      max={r.max}
+                      step={r.step}
+                      value={filters[key].max}
+                      onChange={(e) => setFilters((f) => ({ ...f, [key]: { ...f[key], max: e.target.value } }))}
+                      placeholder="max"
+                      className="w-full rounded border border-white/10 bg-black/30 px-2 py-1 font-mono text-xs text-slate-100 placeholder:text-slate-600 focus:border-cyan-400/50 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Distribution chart across current view */}
+        <EnsembleMetricsChart runs={sortedRuns} />
 
         <div className="mt-6 grid gap-5 lg:grid-cols-[280px_1fr]">
           {/* Run list */}
@@ -875,11 +1024,11 @@ function ScenarioDrilldown() {
               </div>
               {sortedRuns.length === 0 ? (
                 <div className="px-3 py-6 text-center text-sm text-slate-500">
-                  No runs match your search.
+                  No runs match your filters.
                 </div>
               ) : (
                 <ul className="flex flex-col gap-1">
-                  {sortedRuns.map((r) => {
+                  {pageRuns.map((r) => {
                     const isActive = r.run === selectedRun;
                     const failing = r.metrics.wsa < 0.8;
                     return (
@@ -894,15 +1043,11 @@ function ScenarioDrilldown() {
                           }`}
                         >
                           <span className="flex items-center gap-2">
-                            <FileJson
-                              className={`h-3.5 w-3.5 ${isActive ? "text-cyan-300" : "text-slate-500"}`}
-                            />
+                            <FileJson className={`h-3.5 w-3.5 ${isActive ? "text-cyan-300" : "text-slate-500"}`} />
                             <span className="font-mono text-[13px]">{r.run}.json</span>
                           </span>
                           <span
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              failing ? "bg-rose-400" : "bg-emerald-400"
-                            }`}
+                            className={`h-1.5 w-1.5 rounded-full ${failing ? "bg-rose-400" : "bg-emerald-400"}`}
                             aria-label={failing ? "below WSA threshold" : "healthy"}
                           />
                         </button>
@@ -910,6 +1055,29 @@ function ScenarioDrilldown() {
                     );
                   })}
                 </ul>
+              )}
+              {sortedRuns.length > PAGE_SIZE && (
+                <div className="mt-2 flex items-center justify-between border-t border-white/5 px-3 py-2 text-[11px] text-slate-400">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={clampedPage === 0}
+                    className="rounded border border-white/10 px-2 py-0.5 hover:border-cyan-400/40 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    ← Prev
+                  </button>
+                  <span className="font-mono">
+                    {clampedPage + 1} / {pageCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                    disabled={clampedPage >= pageCount - 1}
+                    className="rounded border border-white/10 px-2 py-0.5 hover:border-cyan-400/40 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next →
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -936,28 +1104,15 @@ function ScenarioDrilldown() {
             </div>
 
             <div className="grid gap-5 p-5 md:grid-cols-2">
-              {/* Metrics */}
               <div>
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                   Metrics
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  <MetricCell
-                    label="WSA"
-                    value={active.metrics.wsa.toFixed(3)}
-                    tone={active.metrics.wsa < 0.8 ? "bad" : "good"}
-                  />
+                  <MetricCell label="WSA" value={active.metrics.wsa.toFixed(3)} tone={active.metrics.wsa < 0.8 ? "bad" : "good"} />
                   <MetricCell label="Todini" value={active.metrics.todini.toFixed(3)} tone="info" />
-                  <MetricCell
-                    label="Low-p frac"
-                    value={active.metrics.low_pressure_frac.toFixed(3)}
-                    tone={active.metrics.low_pressure_frac > 0.2 ? "bad" : "neutral"}
-                  />
-                  <MetricCell
-                    label="Pop. impact"
-                    value={active.metrics.pop_impacted.toLocaleString()}
-                    tone={active.metrics.pop_impacted > 20000 ? "bad" : "neutral"}
-                  />
+                  <MetricCell label="Low-p frac" value={active.metrics.low_pressure_frac.toFixed(3)} tone={active.metrics.low_pressure_frac > 0.2 ? "bad" : "neutral"} />
+                  <MetricCell label="Pop. impact" value={active.metrics.pop_impacted.toLocaleString()} tone={active.metrics.pop_impacted > 20000 ? "bad" : "neutral"} />
                 </div>
 
                 <div className="mt-5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
@@ -987,11 +1142,7 @@ function ScenarioDrilldown() {
                   {active.worst_nodes.map((n) => (
                     <li key={n.node} className="flex items-center justify-between gap-3">
                       <span className="text-slate-300">{n.node}</span>
-                      <span
-                        className={
-                          n.min_pressure_m < 14 ? "text-rose-300" : "text-slate-400"
-                        }
-                      >
+                      <span className={n.min_pressure_m < 14 ? "text-rose-300" : "text-slate-400"}>
                         min {n.min_pressure_m.toFixed(1)} m
                       </span>
                     </li>
@@ -999,7 +1150,6 @@ function ScenarioDrilldown() {
                 </ul>
               </div>
 
-              {/* Raw JSON */}
               <div>
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                   Raw JSON
@@ -1021,6 +1171,94 @@ function ScenarioDrilldown() {
         </p>
       </div>
     </section>
+  );
+}
+
+function EnsembleMetricsChart({ runs }: { runs: RunDetail[] }) {
+  const W = 720;
+  const H = 180;
+  const PAD_L = 40;
+  const PAD_R = 16;
+  const PAD_T = 16;
+  const PAD_B = 26;
+
+  const series = [
+    { key: "wsa", label: "WSA", color: "#67e8f9", max: 1 },
+    { key: "todini", label: "Todini", color: "#a5f3fc", max: 1 },
+    { key: "low_pressure_frac", label: "Low-p frac", color: "#fda4af", max: 1 },
+    { key: "pop_impacted", label: "Pop. impact (norm)", color: "#f0abfc", max: 60000 },
+  ] as const;
+
+  if (runs.length === 0) {
+    return (
+      <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center text-xs text-slate-500">
+        No runs to chart. Adjust filters above.
+      </div>
+    );
+  }
+
+  const xFor = (i: number) =>
+    PAD_L + (runs.length === 1 ? 0 : (i / (runs.length - 1)) * (W - PAD_L - PAD_R));
+  const yFor = (v: number, max: number) =>
+    PAD_T + (1 - Math.min(1, v / max)) * (H - PAD_T - PAD_B);
+
+  return (
+    <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          Metrics across current view ({runs.length} runs, sorted)
+        </div>
+        <div className="flex flex-wrap gap-3 text-[11px] text-slate-400">
+          {series.map((s) => (
+            <span key={s.key} className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+              {s.label}
+            </span>
+          ))}
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 h-48 w-full">
+        {[0, 0.25, 0.5, 0.75, 1].map((g) => (
+          <g key={g}>
+            <line
+              x1={PAD_L} x2={W - PAD_R}
+              y1={PAD_T + (1 - g) * (H - PAD_T - PAD_B)}
+              y2={PAD_T + (1 - g) * (H - PAD_T - PAD_B)}
+              stroke="rgba(255,255,255,0.06)"
+            />
+            <text
+              x={PAD_L - 6}
+              y={PAD_T + (1 - g) * (H - PAD_T - PAD_B) + 3}
+              textAnchor="end"
+              fontSize="9"
+              fill="rgba(148,163,184,0.7)"
+              fontFamily="monospace"
+            >
+              {g.toFixed(2)}
+            </text>
+          </g>
+        ))}
+        {series.map((s) => {
+          const path = runs
+            .map((r, i) => `${i === 0 ? "M" : "L"}${xFor(i).toFixed(1)},${yFor(r.metrics[s.key], s.max).toFixed(1)}`)
+            .join(" ");
+          return (
+            <g key={s.key}>
+              <path d={path} fill="none" stroke={s.color} strokeWidth="1.5" opacity="0.9" />
+              {runs.map((r, i) => (
+                <circle key={r.run} cx={xFor(i)} cy={yFor(r.metrics[s.key], s.max)} r={2} fill={s.color} />
+              ))}
+            </g>
+          );
+        })}
+        <text x={PAD_L} y={H - 6} fontSize="9" fill="rgba(148,163,184,0.7)" fontFamily="monospace">
+          {runs[0].run}
+        </text>
+        <text x={W - PAD_R} y={H - 6} textAnchor="end" fontSize="9" fill="rgba(148,163,184,0.7)" fontFamily="monospace">
+          {runs[runs.length - 1].run}
+        </text>
+      </svg>
+    </div>
   );
 }
 
