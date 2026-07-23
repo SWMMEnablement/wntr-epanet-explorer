@@ -312,13 +312,16 @@ function Index() {
           <div className="rounded-xl border border-white/10 bg-black/30 p-4 shadow-2xl shadow-cyan-500/5 backdrop-blur">
             <div className="flex items-center justify-between px-1 pb-2 text-[11px] text-slate-400">
               <span className="font-mono">J35 · pressure (m) · 48 h</span>
-              <span className="flex items-center gap-3">
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-cyan-300" /> baseline
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-rose-400" /> pipe break
-                </span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+                Synthetic
+              </span>
+            </div>
+            <div className="flex items-center gap-3 px-1 pb-2 text-[11px] text-slate-400">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-cyan-300" /> baseline
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-rose-400" /> pipe isolation (P125 closed)
               </span>
             </div>
             <svg viewBox="0 0 600 180" className="w-full">
