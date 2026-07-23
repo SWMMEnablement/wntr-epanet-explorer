@@ -698,8 +698,62 @@ wntr.network.write_inpfile(wn, "Net3.modified.inp", version=2.2)`}</code>
         </div>
       </section>
 
+      {/* Reproducibility — run-record provenance */}
+      <section className="mx-auto max-w-6xl px-6 py-14">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
+          Run-record provenance
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate-400">
+          A random seed alone doesn&apos;t make an ensemble reproducible. Every run JSON records the exact software
+          stack, solver, thresholds, and convergence status so a re-run next year gives the same numbers.
+        </p>
+        <div className="mt-5 overflow-hidden rounded-xl border border-white/10 bg-[oklch(0.19_0.04_245)]">
+          <div className="flex items-center gap-2 border-b border-white/10 bg-black/40 px-4 py-2 text-[11px] font-mono text-slate-400">
+            <span className="h-2.5 w-2.5 rounded-full bg-rose-400/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-300/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
+            <span className="ml-3">results/run_0042.json</span>
+          </div>
+          <pre className="overflow-x-auto p-4 text-[12px] leading-relaxed text-slate-200">
+            <code>{`{
+  "schema_version": "1.0",
+  "toolkit_version": "0.3.1",
+  "wntr_version": "1.4.0",
+  "epanet_version": "2.2",
+  "python_version": "3.11.9",
+  "model_sha256": "b4e1…9a2c",
+  "scenario_config_sha256": "77f0…41de",
+  "simulator": "WNTRSimulator",
+  "demand_model": "PDD",
+  "pressure_threshold_m": 14.06,
+  "seed": 1000,
+  "scenario": {
+    "family": "pipe_isolation",
+    "target": "P125",
+    "start_hr": 8.0,
+    "duration_hr": 24.0
+  },
+  "converged": true,
+  "warnings": [],
+  "metrics": {
+    "wsa_volume_weighted": 0.871,
+    "wsa_node_time_mean": 0.902,
+    "todini_outage_mean": 0.418,
+    "todini_min": 0.127,
+    "low_pressure_node_time_frac": 0.184,
+    "junctions_ever_low_pressure_frac": 0.320,
+    "peak_population_impacted": 18420,
+    "population_hours_impacted": 128900
+  },
+  "population_estimator": { "method": "demand_derived", "gpcd": 200 }
+}`}</code>
+          </pre>
+        </div>
+      </section>
+
       {/* License & support */}
       <section className="mx-auto max-w-6xl px-6 py-14">
+
         <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">License &amp; support</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
