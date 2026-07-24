@@ -409,7 +409,11 @@ function Index() {
       {/* Scenarios */}
       <section className="mx-auto max-w-6xl px-6 py-14">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Scenario families</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        <p className="mt-2 max-w-2xl text-sm text-slate-400">
+          Each family expands into named variants so &ldquo;pipe break&rdquo; never silently means
+          &ldquo;pipe closure&rdquo;. Choose the perturbation that matches the physical failure you&apos;re modelling.
+        </p>
+        <div className="mt-5 grid gap-4 lg:grid-cols-3">
           {scenarios.map((s) => (
             <div
               key={s.name}
@@ -418,6 +422,16 @@ function Index() {
               <s.icon className="h-5 w-5 text-cyan-300" />
               <div className="mt-3 text-sm font-semibold">{s.name}</div>
               <p className="mt-1.5 text-sm text-slate-400">{s.desc}</p>
+              <ul className="mt-3 space-y-1.5 border-t border-white/5 pt-3">
+                {s.variants.map((v) => (
+                  <li key={v.id} className="flex items-start gap-2 text-[12px] text-slate-300">
+                    <code className="rounded bg-cyan-400/10 px-1.5 py-0.5 font-mono text-[11px] text-cyan-200">
+                      {v.id}
+                    </code>
+                    <span className="text-slate-400">{v.label}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
