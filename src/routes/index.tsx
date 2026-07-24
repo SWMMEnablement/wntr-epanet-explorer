@@ -80,10 +80,40 @@ const artifacts = [
   },
 ];
 
+// Scenario families — renamed to distinguish idealized closure from physical break morphologies.
 const scenarios = [
-  { icon: Waves, name: "Leaks", desc: "Random junction leaks sampled by area and start time." },
-  { icon: GitBranch, name: "Pipe breaks", desc: "Random pipe closures over a configurable duration window." },
-  { icon: Activity, name: "Earthquake", desc: "WNTR seismic fragility model across pipes and tanks." },
+  {
+    icon: GitBranch,
+    name: "Pipe isolation / breaks",
+    desc: "Five distinct perturbations, from a single closed status to a valve-isolated repair cycle.",
+    variants: [
+      { id: "pipe_closure", label: "Single pipe status → closed (idealized outage)" },
+      { id: "pipe_break_with_leak", label: "Split pipe + emitter at break location" },
+      { id: "pipe_break_unisolated", label: "Disconnected pipe segments, no valve action" },
+      { id: "pipe_break_isolated", label: "Break + valve segment closure (customers cut off)" },
+      { id: "pipe_break_repair", label: "Break → isolate → repair → restore timeline" },
+    ],
+  },
+  {
+    icon: Waves,
+    name: "Leaks",
+    desc: "Random junction leaks sampled by discharge area, start time, and duration.",
+    variants: [
+      { id: "junction_leak", label: "add_leak() emitter — WNTRSimulator only" },
+      { id: "emitter_export", label: "Emitter coefficient (round-trips to .inp)" },
+    ],
+  },
+  {
+    icon: Activity,
+    name: "Earthquake (fragility)",
+    desc: "Framework, not turnkey — you supply damage states and network mutations.",
+    variants: [
+      { id: "eq_intensity", label: "Magnitude + epicenter → PGA/PGV attenuation" },
+      { id: "eq_fragility", label: "Pipe-material / diameter fragility curves" },
+      { id: "eq_damage_states", label: "Minor / major damage → status or leak" },
+      { id: "eq_tank_damage", label: "Tank fragility (user-defined)" },
+    ],
+  },
 ];
 
 
@@ -379,7 +409,11 @@ function Index() {
       {/* Scenarios */}
       <section className="mx-auto max-w-6xl px-6 py-14">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Scenario families</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+        <p className="mt-2 max-w-2xl text-sm text-slate-400">
+          Each family expands into named variants so &ldquo;pipe break&rdquo; never silently means
+          &ldquo;pipe closure&rdquo;. Choose the perturbation that matches the physical failure you&apos;re modelling.
+        </p>
+        <div className="mt-5 grid gap-4 lg:grid-cols-3">
           {scenarios.map((s) => (
             <div
               key={s.name}
@@ -388,6 +422,16 @@ function Index() {
               <s.icon className="h-5 w-5 text-cyan-300" />
               <div className="mt-3 text-sm font-semibold">{s.name}</div>
               <p className="mt-1.5 text-sm text-slate-400">{s.desc}</p>
+              <ul className="mt-3 space-y-1.5 border-t border-white/5 pt-3">
+                {s.variants.map((v) => (
+                  <li key={v.id} className="flex items-start gap-2 text-[12px] text-slate-300">
+                    <code className="rounded bg-cyan-400/10 px-1.5 py-0.5 font-mono text-[11px] text-cyan-200">
+                      {v.id}
+                    </code>
+                    <span className="text-slate-400">{v.label}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
@@ -751,6 +795,269 @@ wntr.network.write_inpfile(wn, "Net3.modified.inp", version=2.2)`}</code>
           </pre>
         </div>
       </section>
+
+      {/* Ensemble health — convergence & failure handling */}
+      <section className="border-t border-white/10 bg-black/20">
+        <div className="mx-auto max-w-6xl px-6 py-14">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
+            Ensemble health — failures are first-class
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-slate-400">
+            EPANET&apos;s <code className="rounded bg-white/10 px-1.5 py-0.5 text-[12px]">convergence_error=False</code>{" "}
+            default returns partial results after nonconvergence. The runner never treats partial output as a valid
+            scenario — every run carries an explicit status, and the ensemble summary breaks down why runs failed.
+          </p>
+          <div className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_1fr]">
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-[oklch(0.19_0.04_245)]">
+              <div className="flex items-center gap-2 border-b border-white/10 bg-black/40 px-4 py-2 text-[11px] font-mono text-slate-400">
+                <span className="h-2.5 w-2.5 rounded-full bg-rose-400/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-300/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
+                <span className="ml-3">results/run_0187.json (failed)</span>
+              </div>
+              <pre className="overflow-x-auto p-4 text-[12px] leading-relaxed text-slate-200">
+                <code>{`{
+  "run_id": "run_0187",
+  "status": "failed",
+  "failure_type": "hydraulic_nonconvergence",
+  "partial_results": true,
+  "metrics_valid": false,
+  "retry_count": 1,
+  "solver_message": "System unbalanced at hour 12:45",
+  "scenario": { "family": "earthquake", "magnitude": 7.2 }
+}`}</code>
+              </pre>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                summary.json → ensemble.health
+              </div>
+              <table className="mt-3 w-full text-left font-mono text-[13px]">
+                <tbody>
+                  {[
+                    ["requested", "1,000", "text-slate-300"],
+                    ["successful", "971", "text-emerald-300"],
+                    ["hydraulic_nonconvergent", "18", "text-rose-300"],
+                    ["timed_out", "7", "text-rose-300"],
+                    ["invalid_metrics", "4", "text-amber-300"],
+                  ].map(([k, v, cls]) => (
+                    <tr key={k} className="border-t border-white/5">
+                      <td className="py-2 pr-4 text-slate-400">{k}</td>
+                      <td className={`py-2 text-right ${cls}`}>{v}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="mt-4 text-xs text-slate-500">
+                Failed runs are excluded from aggregate metrics but retained on disk for diagnostics — never averaged
+                into WSA or Todini.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Simulator matrix */}
+      <section className="mx-auto max-w-6xl px-6 py-14">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
+          EpanetSimulator vs WNTRSimulator
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate-400">
+          The two solvers are not interchangeable. Mixing them across metrics blends solver differences into scenario
+          effects. The runner logs the simulator used for every run so comparisons stay honest.
+        </p>
+        <div className="mt-6 overflow-hidden rounded-xl border border-white/10">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-white/[0.04] text-[11px] uppercase tracking-wider text-slate-400">
+              <tr>
+                <th className="px-4 py-2.5 font-medium">Capability</th>
+                <th className="px-4 py-2.5 font-medium">EpanetSimulator</th>
+                <th className="px-4 py-2.5 font-medium">WNTRSimulator</th>
+              </tr>
+            </thead>
+            <tbody className="text-[13px] text-slate-300">
+              {[
+                ["Hydraulics (DDA)", "✓ EPANET 2.2 solver", "✓ Python solver"],
+                ["Pressure-dependent demand (PDD)", "✓ (EPANET 2.2)", "✓"],
+                ["Native leaks (add_leak)", "— emulate via emitter", "✓ discharge model"],
+                ["Water quality (age, chlorine, source)", "✓", "✗ (hydraulics only)"],
+                ["Mid-simulation controls (breaks, repair)", "limited", "✓ event-driven"],
+                ["Convergence on severely disconnected networks", "may fail", "generally more robust"],
+              ].map(([cap, ep, wn]) => (
+                <tr key={cap} className="border-t border-white/10">
+                  <td className="px-4 py-2.5 font-medium text-slate-200">{cap}</td>
+                  <td className="px-4 py-2.5">{ep}</td>
+                  <td className="px-4 py-2.5">{wn}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-xs text-slate-500">
+          Rule of thumb: <strong className="text-slate-300">WNTRSimulator</strong> for native leaks and event-driven
+          resilience; <strong className="text-slate-300">EpanetSimulator</strong> when water-quality metrics
+          (chlorine, age, source trace) are required. Never blend the two into a single metric column.
+        </p>
+      </section>
+
+      {/* Earthquake disclosure */}
+      <section className="border-y border-white/10 bg-black/20">
+        <div className="mx-auto max-w-6xl px-6 py-14">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
+            Earthquake scenario disclosure
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-slate-400">
+            WNTR provides intensity attenuation and fragility primitives — <em>you</em> supply damage states and the
+            network mutations that follow. Every earthquake ensemble must disclose these choices in the run record;
+            otherwise two &ldquo;M7 on Net3&rdquo; ensembles are not comparable.
+          </p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {[
+              ["Source", "Magnitude, hypocenter depth, epicenter coordinates"],
+              ["Attenuation", "PGA/PGV model, site amplification"],
+              ["Asset modifiers", "Pipe material, diameter, age, joint type"],
+              ["Fragility curves", "Per-material minor/major damage curves"],
+              ["Correlation", "Spatial correlation of damage draws"],
+              ["Damage states", "How minor damage → leak, major → break/closure"],
+              ["Tank model", "Anchored/unanchored fragility, sloshing"],
+              ["Recovery", "Repair crews, restoration sequence, time to repair"],
+            ].map(([k, v]) => (
+              <div key={k} className="rounded-md border border-white/10 bg-white/[0.03] p-3">
+                <div className="text-[10px] uppercase tracking-wider text-slate-500">{k}</div>
+                <div className="mt-1 text-[13px] text-slate-200">{v}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Roadmap */}
+      <section className="mx-auto max-w-6xl px-6 py-14">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Roadmap</h2>
+        <p className="mt-2 max-w-2xl text-sm text-slate-400">
+          The toolkit is a downloadable starter kit today. These are the tracks that move it toward a utility-grade
+          decision-support platform.
+        </p>
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          {[
+            {
+              tier: "P0",
+              label: "Correctness & trust",
+              tone: "border-rose-400/30 bg-rose-400/5",
+              chip: "text-rose-200 bg-rose-400/10 border-rose-400/40",
+              items: [
+                "Correct Todini definition & aggregation",
+                "Rename closures vs physical breaks",
+                "First-class convergence/partial-result handling",
+                "Pin WNTR 1.4.0 + full dependency lock",
+                "Model & scenario sha256 in every run record",
+                "Keep synthetic labels on all example results",
+              ],
+            },
+            {
+              tier: "P1",
+              label: "Professional toolkit",
+              tone: "border-cyan-400/30 bg-cyan-400/5",
+              chip: "text-cyan-200 bg-cyan-400/10 border-cyan-400/40",
+              items: [
+                "Scenario Studio — YAML/UI-driven ensemble config",
+                "Real-result upload for the explorer (local, no upload to site)",
+                "Asset-criticality maps (probability × impact × duration)",
+                "Valve-isolation segment analysis",
+                "Recovery curves + area-under-service-loss",
+                "Resumable, parallel execution + HTML/JSON reports",
+              ],
+            },
+            {
+              tier: "P2",
+              label: "Utility decision platform",
+              tone: "border-fuchsia-400/30 bg-fuchsia-400/5",
+              chip: "text-fuchsia-200 bg-fuchsia-400/10 border-fuchsia-400/40",
+              items: [
+                "Repair crews & restoration scheduling",
+                "Spatially correlated earthquake damage",
+                "Demographic & equity analysis",
+                "Capital-strategy comparison dashboard",
+                "Annualized risk & intervention optimization",
+                "Power-outage / cross-infrastructure scenarios",
+                "Offline Docker deployment",
+              ],
+            },
+          ].map((track) => (
+            <div key={track.tier} className={`rounded-xl border p-5 ${track.tone}`}>
+              <div className="flex items-center gap-2">
+                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-mono font-semibold ${track.chip}`}>
+                  {track.tier}
+                </span>
+                <span className="text-sm font-semibold text-slate-100">{track.label}</span>
+              </div>
+              <ul className="mt-4 space-y-2 text-[13px] text-slate-300">
+                {track.items.map((it) => (
+                  <li key={it} className="flex gap-2">
+                    <span className="mt-1.5 h-1 w-1 flex-none rounded-full bg-slate-500" />
+                    <span>{it}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Sub-metric breakdowns (low-pressure & population variants) */}
+      <section className="border-t border-white/10 bg-black/20">
+        <div className="mx-auto max-w-6xl px-6 py-14">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
+            One number is never enough — sub-metric breakdowns
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-slate-400">
+            &ldquo;Low-pressure fraction&rdquo; and &ldquo;population impacted&rdquo; each collapse a spatiotemporal
+            surface into a scalar. The runner emits the full set so downstream analysis can pick the aggregation that
+            matches the decision being made.
+          </p>
+          <div className="mt-6 grid gap-5 lg:grid-cols-2">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+              <div className="text-sm font-semibold text-slate-100">Low-pressure family</div>
+              <ul className="mt-3 space-y-2 text-[13px] text-slate-300">
+                {[
+                  ["low_pressure_node_time_frac", "share of (junction × timestep) pairs below threshold"],
+                  ["junctions_ever_low_pressure_frac", "share of junctions that dipped at any timestep"],
+                  ["peak_junctions_low_pressure_frac", "worst timestep — max share simultaneously low"],
+                  ["hours_any_low_pressure", "total hours with ≥ 1 low-pressure junction"],
+                  ["demand_weighted_low_pressure_frac", "weighted by expected demand — captures &lsquo;who&rsquo; not just &lsquo;how many&rsquo;"],
+                ].map(([k, v]) => (
+                  <li key={k} className="flex flex-col gap-0.5">
+                    <code className="font-mono text-[12px] text-cyan-200">{k}</code>
+                    <span className="text-slate-400">{v}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+              <div className="text-sm font-semibold text-slate-100">Population impact family</div>
+              <ul className="mt-3 space-y-2 text-[13px] text-slate-300">
+                {[
+                  ["population_source", "demand_derived (gpcd) · census_gis · user_supplied_attribute"],
+                  ["peak_population_impacted", "max residents affected at any timestep"],
+                  ["unique_population_impacted", "distinct residents ever below threshold"],
+                  ["mean_population_impacted_outage", "average during the outage window"],
+                  ["population_hours_impacted", "∫ impacted(t) dt — usually the most informative single number"],
+                ].map(([k, v]) => (
+                  <li key={k} className="flex flex-col gap-0.5">
+                    <code className="font-mono text-[12px] text-cyan-200">{k}</code>
+                    <span className="text-slate-400">{v}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <p className="mt-4 text-xs text-slate-500">
+            <strong className="text-slate-300">Pick before you present.</strong> Peak vs population-hours can differ by
+            an order of magnitude for the same scenario — always state which aggregation the headline number uses.
+          </p>
+        </div>
+      </section>
+
 
       {/* License & support */}
       <section className="mx-auto max-w-6xl px-6 py-14">
