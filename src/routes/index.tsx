@@ -80,10 +80,40 @@ const artifacts = [
   },
 ];
 
+// Scenario families — renamed to distinguish idealized closure from physical break morphologies.
 const scenarios = [
-  { icon: Waves, name: "Leaks", desc: "Random junction leaks sampled by area and start time." },
-  { icon: GitBranch, name: "Pipe breaks", desc: "Random pipe closures over a configurable duration window." },
-  { icon: Activity, name: "Earthquake", desc: "WNTR seismic fragility model across pipes and tanks." },
+  {
+    icon: GitBranch,
+    name: "Pipe isolation / breaks",
+    desc: "Five distinct perturbations, from a single closed status to a valve-isolated repair cycle.",
+    variants: [
+      { id: "pipe_closure", label: "Single pipe status → closed (idealized outage)" },
+      { id: "pipe_break_with_leak", label: "Split pipe + emitter at break location" },
+      { id: "pipe_break_unisolated", label: "Disconnected pipe segments, no valve action" },
+      { id: "pipe_break_isolated", label: "Break + valve segment closure (customers cut off)" },
+      { id: "pipe_break_repair", label: "Break → isolate → repair → restore timeline" },
+    ],
+  },
+  {
+    icon: Waves,
+    name: "Leaks",
+    desc: "Random junction leaks sampled by discharge area, start time, and duration.",
+    variants: [
+      { id: "junction_leak", label: "add_leak() emitter — WNTRSimulator only" },
+      { id: "emitter_export", label: "Emitter coefficient (round-trips to .inp)" },
+    ],
+  },
+  {
+    icon: Activity,
+    name: "Earthquake (fragility)",
+    desc: "Framework, not turnkey — you supply damage states and network mutations.",
+    variants: [
+      { id: "eq_intensity", label: "Magnitude + epicenter → PGA/PGV attenuation" },
+      { id: "eq_fragility", label: "Pipe-material / diameter fragility curves" },
+      { id: "eq_damage_states", label: "Minor / major damage → status or leak" },
+      { id: "eq_tank_damage", label: "Tank fragility (user-defined)" },
+    ],
+  },
 ];
 
 
